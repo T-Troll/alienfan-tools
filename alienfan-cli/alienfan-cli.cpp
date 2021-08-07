@@ -50,6 +50,18 @@ void GetRPM() {
         cout << "RPM2 is " << res2->Argument[0].Argument << endl;
 }
 
+void GetTemp() { 
+    ACPI_EVAL_OUTPUT_BUFFER* res, *res2;
+    USHORT nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_PCPT"));
+    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_PCPT"), &nType); // PCPT
+    res2 = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_CUPT"), &nType);
+    if (res && res2) {
+        cout << "PCB temp " << res->Argument[0].Argument << ", GPU temp " << res2->Argument[0].Argument << endl;
+    }
+
+
+}
+
 void Usage() {
     cout << "Usage: alienfan-cli [lock [boost1 boost2]]" << endl
         << "\tLock - 1 off, 0 on" << endl
@@ -71,6 +83,7 @@ int main(int argc, char* argv[])
         switch (argc) {
         case 1: // show RPM only
             GetRPM();
+            GetTemp();
             break;
         case 2:
         {// lock/unlock only
