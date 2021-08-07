@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+/.vs
+/AcpiLib/Debug
+/AcpiLib/x64
+/alienfan-cli/.vs/alienfan-tools/v16
+/alienfan-cli/Debug
+/alienfan-cli/x64
+/HwAcc/Debug
+/HwAcc/x64
+/x64
