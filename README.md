@@ -29,7 +29,7 @@ NB: You should have acpilib.dll and hwacc.sys into the same folder.
 it's a simple CLI fan control utility for now, providing the same functionality as AWCC (well... a little more).
 `m15/17R1` can't control fans directly (well... i'm working about it), so all you can do is set fan boost (More RPM).  
 Run `alienfan-cli [lock [boost1 boost2]]`.  
-- Without parameters it provide current fans RPM (funny, AWCC only show "percent" - maybe because they don't want to reveal maximal RPMs is about 5000 - that's why this model so hot - cheap slow fans!)
+- Without parameters it provide current system temperatures and fans RPM (funny, AWCC only show "percent" - maybe because they don't want to reveal maximal RPMs is about 5000 - that's why this model so hot - cheap slow fans!)
 - If lock parameter provided, cli locks/unlocks fan boost (1 - unlock, 0 - lock).
 - If both lock and 2 boost provided, cli set fan boost to values provided (well... setting lock to 0 useless in this case).  
 Boosts can be from 0 to 100 (in percent), 100% provide about +2000 RPM to current temp-based values.  
