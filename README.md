@@ -36,7 +36,7 @@ Boosts can be from 0 to 100 (in percent), 100% provide about +2000 RPM to curren
 Boost1 for CPU fan, Boost2 for GPU one. 
 
 ## ToDo:
-- [ ] Temperature sensors reading
+- [x] Temperature sensors reading
 - [ ] Eliminate "Test mode" requirement
 - [ ] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
   - [ ] `Alienware m15R4`
