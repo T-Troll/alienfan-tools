@@ -5,8 +5,8 @@ This is the side step from my [alienfx-tools](https://github.com/T-Troll/alienfx
 Tools avaliable:
 - `alienfan-cli` - simple fan control command line utility
 
-## Disclamer!
-- This tools utilize low-level ACPI functions access, this can be dangerous for unsupported hardware and can provide system hangs, BSODs and even hardware damage! Use with care, for supported hardware only!
+## Disclamer
+- This tools utilize low-level ACPI functions access, this can be dangerous for unsupported hardware and can provide system hangs, BSODs and even hardware damage! Use with care, for supported hardware only! Use it at you own risk!
 
 ## Known issues
 - **DO NOT** try to run this tools for other gear! It can provide dangerous result!
