@@ -6,24 +6,26 @@ Tools avaliable:
 - `alienfan-cli` - simple fan control command line utility
 
 ## Disclamer
-- This tools utilize low-level ACPI functions access, this can be dangerous for unsupported hardware and can provide system hangs, BSODs and even hardware damage! Use with care, for supported hardware only! Use it at you own risk!
+- This tools utilize low-level ACPI functions access, this can be dangerous and can provide system hang, BSOD and even hardware damage! Use with care, at you own risk!
 
 ## Known issues
-- **DO NOT** try to run this tools for other gear! It can provide dangerous result!
-- After unsuccessful set, ACPI driver can hang into stopping state. Run `alienfan-cli` without parameters a couple of times to reset it (you should see RPM reading if reset succesful).
-- Boost PRMs increased quite fast, but if you lower boost, it took some time to slow down fans. 
+- **DO NOT** try to run this tools at non-Alienware gear! It can provide dangerous result!
+- ACPI driver can hang into stopping state. Run `alienfan-cli` without parameters a couple of times to reset it.
+- Fan PRMs boost is quite fast, but if you lower boost, it took some time to slow down fans. 
+- Power control only avaliable on some models, f.e. m15R1.
 
 ## Requrements
 - Windows 10 x64 OS revision 1706 or higher. Any other OS **Does not supported!**
-- "Test mode" should be enabled. Issue `bcdedit /set testsigning on` command from Administarator command prompt to enable it, then reboot.
+- "Test mode" should be enabled or integrity disabled. Issue `bcdedit /set testsigning on` (if you like warning sign at the desktop) or `bcdedit /set nointegritychecks on` command from Administarator command prompt to enable it, then reboot.
 - Supported Alienware hardware.
 
 ## Installation
-Unpack tools into folder, run any exe.  
+Unpack tools into folder, run exe.  
 NB: You should have acpilib.dll and hwacc.sys into the same folder.
 
 ## Supported hardware
-- `Alienware m15R1`, `Alienware m17R1`
+- Notebooks: `Alienware m15/17R1` or later.
+- Desktops: `Alienware Aurora R7` or later (with limitations, need more testing).
 
 ## `alienfan-cli` usage
 it's a simple CLI fan control utility for now, providing the same functionality as AWCC (well... a little more).
@@ -32,23 +34,19 @@ Run `alienfan-cli [command[=value{,value}] [command...]]`.
 Avaliable commands:
 - `usage`, `help` - Show short help
 - `dump` - Dump all ACPI values avaliable (for debug and new hardware support)
-- `probe` - Temp sensors info dump for debug
-- `rpm` - Show avaliable fan(s) RPMs
+- `rpm` - Show current fan RPMs
 - `temp` - Show known temperature sensors name and value
-- `unlock=<value>` - Unclock fan controls (1 - unlock, 0 - lock)
-- `boost=<fan1>,<fan2>` - Set fans RPM boost level (0..100 - in percent). Boost1 is for CPU fan, Boost2 for GPU one. 
+- `unlock` - Enable manual fan control
+- `power=<value>` - Set TDP limit to this level (0 - 60W unlocked, 1 - 45W, 2 - 45W with GPU boost, 3 - 60W, 4 -  75W)
+- `getfans` - Show current fan RPMs boost
+- `setfans=<fan1>,<fan2>` - Set fans RPM boost level (0..100 - in percent). Fan1 is for CPU fan, Fan2 for GPU one
 
 ## ToDo:
 - [x] Temperature sensors reading
 - [ ] Eliminate "Test mode" requirement
-- [ ] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
-  - [ ] `Alienware m15R4`
-  - [ ] `Alienware m15R3`
-  - [ ] `Alienware 17R3`
-  - [ ] `Alienware 13R2`
-  - [ ] `Aurora R7, R8` (also FX support for R7 - this model have it into ACPI!)
+- [x] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
 - [ ] Temp-RPM curves and indirect RPM control
-- [ ] CPU power limit control
+- [x] CPU power limit control
 - [ ] Dynamic power distribution
 - [ ] `alienfx-gui` integration
 
