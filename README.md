@@ -27,11 +27,12 @@ NB: You should have acpilib.dll and hwacc.sys into the same folder.
 
 ## `alienfan-cli` usage
 it's a simple CLI fan control utility for now, providing the same functionality as AWCC (well... a little more).
-`m15/17R1` can't control fans directly (well... i'm working about it), so all you can do is set fan boost (More RPM).  
+`m15/17R1` can't control fans directly (well... i'm working on it), so all you can do is set fan boost (More RPM).  
 Run `alienfan-cli [command[=value{,value}] [command...]]`.  
 Avaliable commands:
 - `usage`, `help` - Show short help
 - `dump` - Dump all ACPI values avaliable (for debug and new hardware support)
+- `probe` - Temp sensors info dump for debug
 - `rpm` - Show avaliable fan(s) RPMs
 - `temp` - Show known temperature sensors name and value
 - `unlock=<value>` - Unclock fan controls (1 - unlock, 0 - lock)

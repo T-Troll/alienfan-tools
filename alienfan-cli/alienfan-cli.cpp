@@ -3,16 +3,136 @@
 
 #include <iostream>
 #include <vector>
+#include <ole2.h>
+#include <oleauto.h>
+#include <wbemidl.h>
+#include <comdef.h>
 #include "acpilib.h"
 #include "acpi.h"
 
 using namespace std;
 
+#pragma comment(lib, "wbemuuid.lib")
+
+_COM_SMARTPTR_TYPEDEF(IWbemLocator, __uuidof(IWbemLocator));
+_COM_SMARTPTR_TYPEDEF(IWbemServices, __uuidof(IWbemServices));
+_COM_SMARTPTR_TYPEDEF(IWbemClassObject, __uuidof(IWbemClassObject));
+_COM_SMARTPTR_TYPEDEF(IEnumWbemClassObject, __uuidof(IEnumWbemClassObject));
+
+struct ALIENFAN_TEMP {
+    TCHAR* tempSensor;
+    string tempSensorName;
+};
+
+struct ALIENFAN_FAN {
+    TCHAR* fanBoostValue;
+    string fanName;
+    //TCHAR* fanSet;
+    USHORT fanID;
+};
+
+struct ALIENFAN_MODEL {
+    PWSTR modelName;
+    TCHAR* unlockCommand;
+    USHORT lockOn, lockOff;
+    vector<ALIENFAN_TEMP> tempSensors;
+    vector<ALIENFAN_FAN> fans;
+    TCHAR* boostCommand;
+    TCHAR* getRPMCommand;
+    TCHAR* setRPMCommand;
+};
+
+ALIENFAN_MODEL* LoadModelsDB(PWSTR model) {
+    ALIENFAN_MODEL* res = NULL;
+    if (wstring(model) == L"Alienware m15") {
+        res = new ALIENFAN_MODEL;
+        res->modelName = model;
+        res->unlockCommand = (TCHAR*) TEXT("\\____SB_IETMMCHG");
+        res->boostCommand = (TCHAR*) TEXT("\\____SB_AMW1SRPM");
+        res->getRPMCommand = (TCHAR*) TEXT("\\____SB_AMW1FNSR");
+        res->setRPMCommand = NULL;
+        res->lockOff = 0;
+        res->lockOn = 1;
+        
+        ALIENFAN_FAN cFan;
+        cFan.fanName = "CPU Fan";
+        cFan.fanID = 0x32;
+        cFan.fanBoostValue = (TCHAR*) TEXT("\\____SB_AMW1RPM1");
+        res->fans.push_back(cFan);
+        cFan.fanName = "GPU Fan";
+        cFan.fanID = 0x33;
+        cFan.fanBoostValue = (TCHAR*) TEXT("\\____SB_AMW1RPM2");
+        res->fans.push_back(cFan);
+
+        ALIENFAN_TEMP cTemp;
+        cTemp.tempSensor = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_PCPT");
+        cTemp.tempSensorName = "CPU Internal Thermistor";
+        res->tempSensors.push_back(cTemp);
+        cTemp.tempSensor = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_CUPT");
+        cTemp.tempSensorName = "CPU External Thermistor";
+        res->tempSensors.push_back(cTemp);
+        cTemp.tempSensor = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH1R");
+        cTemp.tempSensorName = "Graphic Internal Thermistor";
+        res->tempSensors.push_back(cTemp);
+        cTemp.tempSensor = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_GRAP");
+        cTemp.tempSensorName = "Graphic External Thermistor";
+        res->tempSensors.push_back(cTemp);
+        cTemp.tempSensor = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH0R");
+        cTemp.tempSensorName = "SSD Thermistor";
+        res->tempSensors.push_back(cTemp);
+        cTemp.tempSensor = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH0L");
+        cTemp.tempSensorName = "Ambient Thermistor";
+        res->tempSensors.push_back(cTemp);
+    }
+    return res;
+}
+
+_bstr_t GetProperty(IWbemClassObject *pobj, PCWSTR pszProperty)
+{
+    _variant_t var;
+    pobj->Get(pszProperty, 0, &var, nullptr, nullptr);
+    return (_bstr_t) var;
+}
+void PrintProperty(IWbemClassObject *pobj, PCWSTR pszProperty)
+{
+    printf("%ls = %ls\n", pszProperty,
+           static_cast<PWSTR>(GetProperty(pobj, pszProperty)));
+}
+
+PWSTR GetSystemInfo() {
+    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+    IWbemLocatorPtr spLocator;
+    CoCreateInstance(CLSID_WbemLocator, nullptr, CLSCTX_ALL,
+                     IID_PPV_ARGS(&spLocator));
+    IWbemServicesPtr spServices;
+    spLocator->ConnectServer(_bstr_t(L"root\\cimv2"),
+                             nullptr, nullptr, 0, 0, nullptr, nullptr, &spServices);
+    CoSetProxyBlanket(spServices, RPC_C_AUTHN_DEFAULT,
+                      RPC_C_AUTHZ_DEFAULT, COLE_DEFAULT_PRINCIPAL,
+                      RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
+                      0, EOAC_NONE);
+    IEnumWbemClassObjectPtr spEnum;
+    spServices->ExecQuery(_bstr_t(L"WQL"),
+                          _bstr_t(L"select * from Win32_ComputerSystem"),
+                          WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
+                          nullptr, &spEnum);
+    IWbemClassObjectPtr spObject;
+    ULONG cActual;
+    while (spEnum->Next(WBEM_INFINITE, 1, &spObject, &cActual)
+           == WBEM_S_NO_ERROR) {
+        //PrintProperty(spObject, L"Name");
+        //PrintProperty(spObject, L"Manufacturer");
+        //PrintProperty(spObject, L"Model");
+        return static_cast<PWSTR>(GetProperty(spObject, L"Model"));
+    }
+    return NULL;
+}
+
 void DumpAcpi(ACPI_NS_DATA data) {
     int offset = 0;
     string fullname;
     ACPI_NAMESPACE* curData = data.pAcpiNS;
-    for (int i = 0; i < data.uCount; i++) {
+    for (UINT i = 0; i < data.uCount; i++) {
         //for (int j = 0; j < offset; j++)
         //    cout << "|";
         string mname = (char*)curData->MethodName;
@@ -39,58 +159,24 @@ void DumpAcpi(ACPI_NS_DATA data) {
     }
 }
 
-void GetRPM() {
-    ACPI_EVAL_OUTPUT_BUFFER* res, *res2;
-    res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput((TCHAR*) TEXT("\\____SB_AMW1FNSR"), (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0x32));
-    if (res)
-        cout << "RPM1 is " << res->Argument[0].Argument << ", ";
-    res2 = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput((TCHAR*) TEXT("\\____SB_AMW1FNSR"), (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0x33));
-    if (res2)
-        cout << "RPM2 is " << res2->Argument[0].Argument << endl;
-}
-
-void GetTemp() {
-    // PCPT/???? - CPU internal
-    // CUPT/SEN1 - CPU external
-    // TH1R/SEN2 - GPU internal
-    // GRAP/SEN3 - GPU external
-    // TH0R/SEN4 - SSD
-    // TH0L/SEN5 - Ambient(!)
-
-    ACPI_EVAL_OUTPUT_BUFFER* res[6], *resName;
-    USHORT nType[6];
-    USHORT nsType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_SEN1_STR"));
-    string senNames[6];
-    senNames[0] = "CPU Internal Thermistor";
-    for (int i = 1; i < 6; i++) {
+void ProbeTemp() {
+    PACPI_EVAL_OUTPUT_BUFFER resName = NULL;
+    SHORT nsType = 0;
+    for (int i = 0; i < 10; i++) {
         TCHAR keyname[] = TEXT("\\____SB_PCI0LPCBEC0_SEN1_STR");
         keyname[23] = i + '0';
-        if (resName = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(keyname, &nsType)) {
-            char* c_name = new char[resName->Argument[0].DataLength + 1];
-            wcstombs_s(NULL, c_name, resName->Argument[0].DataLength, (TCHAR*) resName->Argument[0].Data, resName->Argument[0].DataLength);
-            senNames[i] = c_name;
-            delete[] c_name;
+        nsType = GetNSType(keyname);
+        if (nsType != -1) {
+            // Key found!
+            if (resName = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(keyname, (USHORT*)&nsType)) {
+                char* c_name = new char[resName->Argument[0].DataLength + 1];
+                wcstombs_s(NULL, c_name, resName->Argument[0].DataLength, (TCHAR*) resName->Argument[0].Data, resName->Argument[0].DataLength);
+                string senName = c_name;
+                delete[] c_name;
+                cout << "Sensor #" << i << ", Name: " << senName << endl;
+            }
         }
     }
-    nType[0] = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_PCPT"));
-    nType[1] = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_CUPT"));
-    nType[2] = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH1R"));
-    nType[3] = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_GRAP"));
-    nType[4] = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH0R"));
-    nType[5] = GetNSType((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH0L"));
-    res[0] = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_PCPT"), &nType[0]);
-    res[1] = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_CUPT"), &nType[1]);
-    res[2] = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH1R"), &nType[2]);
-    res[3] = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_GRAP"), &nType[3]);
-    res[4] = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH0R"), &nType[4]);
-    res[5] = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_TH0L"), &nType[5]);
-    if (res[0] && res[1] && res[2] && res[3] && res[4] && res[5]) {
-        cout << "Temperatures:" << endl;
-        for (int i = 0; i < 6; i++)
-            cout << senNames[i] << ": " << res[i]->Argument[0].Argument << endl;
-    }
-
-
 }
 
 void Usage() {
@@ -106,7 +192,18 @@ void Usage() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.2.0\n";
+    std::cout << "AlienFan-cli v0.0.3.0\n";
+
+    PWSTR model = GetSystemInfo();
+    printf("System: %ls", model);
+
+    ALIENFAN_MODEL* info = LoadModelsDB(model);
+
+    if (info) {
+        cout << " - Supported!" << endl;
+    } else {
+        cout << " - Unsupported!" << endl;
+    }
 
     HANDLE acc = OpenAcpiService();
 
@@ -117,7 +214,7 @@ int main(int argc, char* argv[])
     }
 
     if (acc && QueryAcpiNSInLib()) {
-        ACPI_EVAL_OUTPUT_BUFFER* res, * res2;
+        PACPI_EVAL_OUTPUT_BUFFER res;
         USHORT nType = ACPI_TYPE_INTEGER;
         for (int cc = 1; cc < argc; cc++) {
             string arg = string(argv[cc]);
@@ -140,11 +237,24 @@ int main(int argc, char* argv[])
                 continue;
             }
             if (command == "rpm") {
-                GetRPM();
+                if (info && info->getRPMCommand) {
+                    for (int i = 0; i < info->fans.size(); i++) {
+                        res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(info->getRPMCommand, (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, info->fans[i].fanID));
+                        if (res)
+                            cout << "Fan " << info->fans[i].fanName << " is at " << res->Argument[0].Argument << " RPM." << endl;
+                    }
+                }
                 continue;
             }
             if (command == "temp") {
-                GetTemp();
+                if (info) {
+                    for (int i = 0; i < info->tempSensors.size(); i++) {
+                        nType = GetNSType(info->tempSensors[i].tempSensor);
+                        res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(info->tempSensors[i].tempSensor, &nType);
+                        if (res)
+                            cout << info->tempSensors[i].tempSensorName << ": " << res->Argument[0].Argument << endl;
+                    }
+                }
                 continue;
             }
             if (command == "dump") {
@@ -153,14 +263,24 @@ int main(int argc, char* argv[])
                 DumpAcpi(data);
                 continue;
             }
+            if (command == "probe") {
+                ProbeTemp();
+                continue;
+            }
             if (command == "unlock") {
-                int lock = !atoi(args[0].c_str());
-                if (lock)
-                    cout << "Locking device...";
-                else
-                    cout << "Unlocking device...";
-                res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput((TCHAR*) TEXT("\\____SB_IETMMCHG"), (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, lock));
-                cout << " Done." << endl;
+                if (info && info->unlockCommand) {
+                    int lock = atoi(args[0].c_str());
+                    if (lock) {
+                        cout << "UnLocking device...";
+                        //lock = info->lockOff;
+                    }
+                    else {
+                        cout << "Locking device...";
+                        //lock = info->lockOn;
+                    }
+                    res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(info->unlockCommand, (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, lock));
+                    cout << " done." << endl;
+                }
                 continue;
             }
             if (command == "boost") {
@@ -168,29 +288,55 @@ int main(int argc, char* argv[])
                     cout << "Boost: incorrect arguments" << endl;
                     continue;
                 }
-                UINT boost1 = atoi(args[0].c_str()), boost2 = atoi(args[1].c_str());
-                res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_AMW1RPM1"), &nType);
-                res2 = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_AMW1RPM2"), &nType);
-                if (res && res2)
-                    cout << "Current boost for FAN1 - " << (UINT) res->Argument[0].Argument << ", FAN2 - " << res2->Argument[0].Argument << endl;
-                else {
-                    cout << "Can't get current boost. Driver error?" << endl;
-                    continue;
+                if (info && info->boostCommand) {
+                    ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
+                    for (int i = 0; i < info->fans.size(); i++) {
+                        UINT boost = atoi(args[i].c_str());
+                        res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(info->fans[i].fanBoostValue, &nType);
+                        if (res) {
+                            cout << "Old boost:" << (UINT) res->Argument[0].Argument;
+                        }
+                        acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, info->fans[i].fanID);
+                        acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(acpiargs, boost);
+                        res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(info->boostCommand, acpiargs);
+                        if (res) {
+                            cout << ". Boost for fan " << info->fans[i].fanName << " done with code " << hex << res->Argument[0].Argument << dec;
+                        }
+                        res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(info->fans[i].fanBoostValue, &nType);
+                        if (res) {
+                            cout << ", New boost:" << (UINT) res->Argument[0].Argument << endl;
+                        }
+                    }
                 }
-                ACPI_EVAL_INPUT_BUFFER_COMPLEX* args, * args2;
-                args = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0x32);
-                args = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(args, boost1);
-                args2 = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0x33);
-                args2 = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(args2, boost2);
-                res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput((TCHAR*) TEXT("\\____SB_AMW1SRPM"), args);
-                res2 = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput((TCHAR*) TEXT("\\____SB_AMW1SRPM"), args2);
-                if (res && res2) {
-                    cout << "Set boost done with (" << hex << res->Argument[0].Argument << "," << res2->Argument[0].Argument << dec << ")" << endl;
+                continue;
+            }
+            if (command == "test") { // pseudo block for tes modules
+                //_SB_PCI0B0D4PMAX PTDP PMIN TMAX PWRU
+                nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"));
+                res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"), &nType);
+                if (res) {
+                    cout << "PTDP = " << res->Argument[0].Argument << endl;
                 }
-                res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_AMW1RPM1"), &nType);
-                res2 = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_AMW1RPM2"), &nType);
-                if (res && res2)
-                    cout << "New boost for FAN1 - " << (UINT) res->Argument[0].Argument << ", FAN2 - " << res2->Argument[0].Argument << endl;
+                nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"));
+                res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"), &nType);
+                if (res) {
+                    cout << "PMAX = " << res->Argument[0].Argument << endl;
+                }
+                nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"));
+                res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"), &nType);
+                if (res) {
+                    cout << "PMIN = " << res->Argument[0].Argument << endl;
+                }
+                nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"));
+                res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"), &nType);
+                if (res) {
+                    cout << "TMAX = " << res->Argument[0].Argument << endl;
+                }
+                nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"));
+                res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"), &nType);
+                if (res) {
+                    cout << "PWRU = " << res->Argument[0].Argument << endl;
+                }
                 continue;
             }
             cout << "Unknown command - " << command << ", use \"usage\" or \"help\" for information" << endl;
