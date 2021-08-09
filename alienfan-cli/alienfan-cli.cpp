@@ -3,25 +3,11 @@
 
 #include <iostream>
 #include <vector>
+#include "alienfan-SDK.h"
 #include "acpilib.h"
-#include "acpi.h"
+//#include "acpi.h"
 
 using namespace std;
-
-// One thing to rule them all!
-// AMW infewrface command - 3 parameters.
-TCHAR* mainCommand = (TCHAR*) TEXT("\\____SB_AMW1WMAX");
-// Last fan set
-TCHAR* getLastSet = (TCHAR*) TEXT("\\____SB_AMW1RPM1");
-// Additional temp sensor name pattern
-TCHAR* tempNamePattern = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_SEN1_STR");
-// Additional temp sensor value pattern
-TCHAR* tempValuePattern = (TCHAR*) TEXT("\\____SB_PCI0LPCBEC0_SEN1_TMP");
-
-struct ALIENFAN_SEN_INFO {
-    SHORT senIndex = 0;
-    string name;
-};
 
 void DumpAcpi(ACPI_NS_DATA data) {
     int offset = 0;
@@ -54,48 +40,6 @@ void DumpAcpi(ACPI_NS_DATA data) {
     }
 }
 
-
-vector<ALIENFAN_SEN_INFO> ProbeTemp() {
-    PACPI_EVAL_OUTPUT_BUFFER resName = NULL;
-    SHORT nsType = 0;
-    vector<ALIENFAN_SEN_INFO> res;
-    ALIENFAN_SEN_INFO cur;
-    for (int i = 0; i < 10; i++) {
-        TCHAR keyname[] = TEXT("\\____SB_PCI0LPCBEC0_SEN1_STR");
-        keyname[23] = i + '0';
-        nsType = GetNSType(keyname);
-        if (nsType != -1) {
-            // Key found!
-            if (resName = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(keyname, (USHORT*)&nsType)) {
-                char* c_name = new char[resName->Argument[0].DataLength + 1];
-                wcstombs_s(NULL, c_name, resName->Argument[0].DataLength, (TCHAR*) resName->Argument[0].Data, resName->Argument[0].DataLength);
-                string senName = c_name;
-                delete[] c_name;
-                cur.senIndex = i;
-                cur.name = senName;
-                res.push_back(cur);
-                //cout << "Sensor #" << i << ", Name: " << senName << endl;
-            }
-        }
-    }
-    return res;
-}
-
-int RunMainCommand(USHORT command, BYTE subcommand, BYTE arg1 = 0, BYTE arg2 = 0) {
-    PACPI_EVAL_OUTPUT_BUFFER res = NULL;
-    ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
-    BYTE operand[4] = {subcommand, arg1, arg2, 0};
-    //UINT operand = ((UINT) arg2) << 16 | (UINT) arg1 << 8 | subcommand;
-    acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0);
-    acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(acpiargs, command);
-    acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutBuffArg(acpiargs, 4, operand);
-    res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(mainCommand, acpiargs);
-    if (res) {
-        return (int) res->Argument[0].Argument;
-    }
-    return -1;
-}
-
 void Usage() {
     cout << "Usage: alienfan-cli [command[=value{,value}] [command...]]" << endl
         << "Avaliable commands: " << endl
@@ -112,9 +56,9 @@ void Usage() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.4\n";
+    std::cout << "AlienFan-cli v0.0.5\n";
 
-    HANDLE acc = OpenAcpiService();
+    AlienFan_SDK::Control acpi;
 
     if (argc < 2) 
     {
@@ -122,14 +66,11 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    if (acc && QueryAcpiNSInLib()) {
-        PACPI_EVAL_OUTPUT_BUFFER res;
-        USHORT nsType = ACPI_TYPE_METHOD;
+    if (acpi.IsActivated()) {
 
-        // Checking hardware...
-        nsType = GetNSType(mainCommand);
-        if (nsType == ACPI_TYPE_METHOD) {
-            cout << "Supported hardware detected!" << endl;
+        if (acpi.Probe()) {
+            cout << "Supported hardware detected, " << acpi.HowManyFans() << " fans, " 
+                << acpi.sensors.size() << " sensors, " << acpi.HowManyPower() << " power states." << endl;
 
             for (int cc = 1; cc < argc; cc++) {
                 string arg = string(argv[cc]);
@@ -152,14 +93,14 @@ int main(int argc, char* argv[])
                     continue;
                 }
                 if (command == "rpm") {
-                    int prms = RunMainCommand(0x14, 0x5, 0x32);
-                    if (prms >= 0)
-                        cout << "CPU fan: " << prms;
-                    prms = RunMainCommand(0x14, 0x5, 0x33);
-                    if (prms >= 0)
-                        cout << ", GPU fan: " << prms << endl;
-                    else
-                        cout << "RPM reading failed!" << endl;
+                    int prms = 0;
+                    for (int i = 0; i < acpi.HowManyFans(); i++)
+                        if ((prms = acpi.GetFanRPM(i)) >= 0)
+                            cout << "Fan#" << i << ": " << prms << endl;
+                        else {
+                            cout << "RPM reading failed!" << endl;
+                            break;
+                        }
                     //prms = RunMainCommand(0x14, 0x8, 0x32);
                     //if (prms >= 0)
                     //    cout << "Target CPU fan: " << prms;
@@ -169,38 +110,22 @@ int main(int argc, char* argv[])
                     continue;
                 }
                 if (command == "temp") {
-                    // Probing sensors...
-                    vector<ALIENFAN_SEN_INFO> sensors = ProbeTemp();
-                    cout << sensors.size() << " additional temperature sensors detected." << endl;
-                    // main CPU&GPU sensors from AWC!
-                    int cTemp = RunMainCommand(0x14, 0x4, 1);
-                    if (cTemp >= 0) {
-                        cout << "CPU Internal Thermister: " << cTemp << endl;
-                    }
-                    cTemp = RunMainCommand(0x14, 0x4, 6);
-                    if (cTemp >= 0) {
-                        cout << "GPU Internal Thermister: " << cTemp << endl;
-                    }
-                    for (int i = 0; i < sensors.size(); i++) {
-                        TCHAR keyname[] = TEXT("\\____SB_PCI0LPCBEC0_SEN1_TMP");
-                        keyname[23] = sensors[i].senIndex + '0';
-                        nsType = GetNSType(keyname);
-                        res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(keyname, &nsType);
-                        if (res)
-                            cout << sensors[i].name << ": " << (res->Argument[0].Argument - 0xaac) / 0xa << endl;
+                    int res = 0;
+                    for (int i = 0; i < acpi.sensors.size(); i++) {
+                        if ((res = acpi.GetTempValue(i)) >= 0)
+                            cout << acpi.sensors[i].name << ": " << res << endl;
                     }
                     continue;
                 }
                 if (command == "dump") {
                     ACPI_NS_DATA data = {0};
-                    QueryAcpiNS(acc, &data, 0xc1);
+                    QueryAcpiNS(acpi.GetHandle(), &data, 0xc1);
                     DumpAcpi(data);
                     continue;
                 }
                 if (command == "unlock") {
-                    int unlock = RunMainCommand(0x15, 0x1);
-                    if (unlock >= 0)
-                        cout << "Unlock result: " << unlock << endl;
+                    if (acpi.Unlock() >= 0)
+                        cout << "Unlock successful." << endl;
                     else
                         cout << "Unlock failed!" << endl;
                     continue;
@@ -211,49 +136,41 @@ int main(int argc, char* argv[])
                         continue;
                     }
                     BYTE unlockStage = atoi(args[0].c_str());
-                    BYTE unlockType = 0;
-                    switch (unlockStage) {
-                    case 1: // 45W GPU boost
-                        unlockType = 0xa3; break;
-                    case 2: // 45W calm
-                        unlockType = 0xa2; break;
-                    case 3: // 60W
-                        unlockType = 0xa0; break;
-                    case 4: // 75W
-                        unlockType = 0xa1; break;
-                    }
-                    int unlock = RunMainCommand(0x15, 0x1, unlockType);
-                    if (unlock >= 0)
-                        cout << "Power set result: " << unlock << endl;
-                    else
-                        cout << "Power set failed!" << endl;
+                    if (unlockStage < acpi.HowManyPower()) {
+                        if (acpi.SetPower(unlockStage) >= 0)
+                            cout << "Power set to " << (int) unlockStage << endl;
+                        else
+                            cout << "Power set failed!" << endl;
+                    } else
+                        cout << "Power: incorrect value (should be 0.." << acpi.HowManyPower() << ")" << endl;
                     continue;
                 }
                 if (command == "getfans") {
-                    int prms = RunMainCommand(0x14, 0xc, 0x32);
-                    if (prms >= 0)
-                        cout << "CPU fan now at: " << prms;
-                    prms = RunMainCommand(0x14, 0xc, 0x33);
-                    if (prms >= 0)
-                        cout << ", GPU fan now at: " << prms << endl;
-                    else
-                        cout << "Get fan settings failed!" << endl;
+                    int prms = 0;
+                    for (int i = 0; i < acpi.HowManyFans(); i++)
+                        if ((prms = acpi.GetFanValue(i)) >= 0)
+                            cout << "Fan#" << i << " now at " << prms << endl;
+                        else {
+                            cout << "Get fan settings failed!" << endl;
+                            break;
+                        }
                     continue;
                 }
                 if (command == "setfans") {
-                    if (args.size() < 2) {
-                        cout << "Boost: incorrect arguments" << endl;
+                    if (args.size() < acpi.HowManyFans()) {
+                        cout << "Setfans: incorrect arguments (should be " << acpi.HowManyFans() << ")" << endl;
                         continue;
                     }
-                    BYTE boost1 = atoi(args[0].c_str()), boost2 = atoi(args[1].c_str());
-                    int prms = RunMainCommand(0x15, 0x2, 0x32, boost1);
-                    if (prms >= 0)
-                        cout << "CPU fan set to: " << (int)boost1;
-                    prms = RunMainCommand(0x15, 0x2, 0x33, boost2);
-                    if (prms >= 0)
-                        cout << ", GPU fan set to: " << (int)boost2 << endl;
-                    else
-                        cout << "Set fan boost failed!" << endl;
+                    int prms = 0;
+                    for (int i = 0; i < acpi.HowManyFans(); i++) {
+                        BYTE boost = atoi(args[i].c_str());
+                        if (acpi.SetFanValue(i, boost))
+                            cout << "Fan#" << i << " set to " << (int) boost << endl;
+                        else {
+                            cout << "Set fan level failed!" << endl;
+                            break;
+                        }
+                    }
                     continue;
                 }
                 //if (command == "test") { // pseudo block for tes modules
@@ -289,11 +206,10 @@ int main(int argc, char* argv[])
                 cout << "Unknown command - " << command << ", use \"usage\" or \"help\" for information" << endl;
             }
         } else {
-            cout << "No supported hardware detected." << endl;
+            cout << "Supported hardware not found!" << endl;
         }
     } else {
-        cout << "Can't load driver or access denied. Are you in Test mode and admin?" << endl;
+        cout << "Driver initialization issue. Are you admin?" << endl;
     }
-
-    cout << "Done!" << endl;
+    //cout << "Done!" << endl;
 }
