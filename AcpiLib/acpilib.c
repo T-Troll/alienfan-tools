@@ -801,7 +801,7 @@ Return Value:
 {
     HANDLE hndFile;
     DWORD  errNum;
-    TCHAR  driverLocation[MAX_PATH];
+    TCHAR  driverLocation[MAX_PATH] = {0};
        
     hndFile = CreateFile(
         _T("\\\\.\\HwAcc"),

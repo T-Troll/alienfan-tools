@@ -56,20 +56,30 @@ namespace AlienFan_SDK {
 					startIndex++;
 				}
 				ALIENFAN_SEN_INFO cur;
-				cur.senIndex = 1; // TODO - get real ID from AWC!
-				cur.isFromAWC = true;
-				cur.name = "CPU Internal Thermister";
-				sensors.push_back(cur);
-				cur.senIndex = 6; // TODO - get real ID from AWC!
-				cur.name = "GPU Internal Thermister";
-				sensors.push_back(cur);
+				// Scan term sensors for fans...
+				for (int i = 0; i < fans.size(); i++) {
+					USHORT tempIndex;
+					if ((tempIndex = RunMainCommand(0x13, 0x2, (byte)fans[i])) != -1) {
+						cur.senIndex = tempIndex;
+						cur.isFromAWC = true;
+						switch (i) {
+						case 0:
+							cur.name = "CPU Internal Thermister"; break;
+						case 1:
+							cur.name = "GPU Internal Thermister"; break;
+						default:
+							cur.name = "FAN#" + to_string(i) + " sensor"; break;
+						}
+						sensors.push_back(cur);
+					}
+				}
 				for (int i = 0; i < 10; i++) {
 					tempNamePattern[23] = i + '0';
 					nsType = GetNSType(tempNamePattern);
 					if (nsType != -1) {
 						// Key found!
 						if (resName = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(tempNamePattern, (USHORT*)&nsType)) {
-							char* c_name = new char[resName->Argument[0].DataLength + 1];
+							char* c_name = new char[1 + resName->Argument[0].DataLength];
 							wcstombs_s(NULL, c_name, resName->Argument[0].DataLength, (TCHAR*) resName->Argument[0].Data, resName->Argument[0].DataLength);
 							string senName = c_name;
 							delete[] c_name;
@@ -148,5 +158,8 @@ namespace AlienFan_SDK {
 	}
 	int Control::HowManyPower() {
 		return (int)powers.size();
+	}
+	int Control::HowManySensors() {
+		return (int)sensors.size();
 	}
 }

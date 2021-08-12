@@ -33,6 +33,7 @@ namespace AlienFan_SDK {
 		bool IsActivated();
 		int HowManyFans();
 		int HowManyPower();
+		int HowManySensors();
 
 		vector<ALIENFAN_SEN_INFO> sensors;
 		vector<USHORT> fans;

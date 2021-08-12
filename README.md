@@ -4,13 +4,14 @@ This is the side step from my [alienfx-tools](https://github.com/T-Troll/alienfx
 
 Tools avaliable:
 - `alienfan-cli` - simple fan control command line utility
+- `alienfan-cli` - Fan control GUI application
 
 ## Disclamer
 - This tools utilize low-level ACPI functions access, this can be dangerous and can provide system hang, BSOD and even hardware damage! Use with care, at you own risk!
 
 ## Known issues
 - **DO NOT** try to run this tools at non-Alienware gear! It can provide dangerous result!
-- ACPI driver can hang into stopping state. Run `alienfan-cli` without parameters a couple of times to reset it.
+- ACPI driver can hang into stopping state. Run app without parameters 3 of times to reset it.
 - Fan PRMs boost is quite fast, but if you lower boost, it took some time to slow down fans. 
 - Power control only avaliable on some models, f.e. m15R1, m15R3.
 - Power control modes not detected in power grow order, so check real PL1 after set using other tool, f.e. HWINFO.  
@@ -20,7 +21,8 @@ For my gear 0 = 60W unlocked, 1 - 60W, 2 - 75W, 3 - 45W with gpu boost, 4 - 45W.
 
 ## Requrements
 - Windows 10 x64 OS revision 1706 or higher. Any other OS **Does not supported!**
-- "Test mode" should be enabled or integrity disabled. Issue `bcdedit /set testsigning on` (if you like warning sign at the desktop) or `bcdedit /set nointegritychecks on` command from Administarator command prompt to enable it, then reboot.
+- Go into BIOS and disable "Secure boot" option - it's interfere with the next point.
+- "Test mode" should be enabled. Issue `bcdedit /set testsigning on`  command from Administarator command prompt to enable it, then reboot.
 - Supported Alienware hardware.
 
 ## Installation
@@ -29,10 +31,10 @@ NB: You should have acpilib.dll and hwacc.sys into the same folder.
 
 ## Supported hardware
 - Notebooks: `Alienware m15/17R1` or later.
-- Desktops: `Alienware Aurora R7` or later (with issues, need more testing).
+- Desktops: <s>`Alienware Aurora R7` or later (with issues, need more testing).</s> Sorry, not supported now (different function mapping).
 
 ## `alienfan-cli` usage
-it's a simple CLI fan control utility for now, providing the same functionality as AWCC (well... a bit more already).
+It's a simple CLI fan control utility for now, providing the same functionality as AWCC (well... a bit more already).
 ACPI can't control fans directly (well... i'm working on it), so all you can do is set fan boost (More RPM).
 Run `alienfan-cli [command[=value{,value}] [command...]]`. After start, it detect you gear and show number of fans, temperature sensors and power modes avaliable.
 Avaliable commands:
@@ -44,16 +46,52 @@ Avaliable commands:
 - `power=<value>` - Set PL1 to this predefined level. Possible levels autodetected from ACPI, see message at app start 
 - `getfans` - Show current fan RPMs boost
 - `setfans=<fan1>,<fan2>...` - Set fans RPM boost level (0..100 - in percent). Fan1 is for CPU fan, Fan2 for GPU one. Number of arguments should be the same as number of fans application detect
+NB: Setting Power level to non-zero value disables manual fan control!
+
+## `alienfan-gui` usage
+
+GUI application for fan control.  
+Then you start it, you will see 3 main windows - Temperaturs (with current reading), Fans (with checkboxes) and Fan setting (graph).  
+Also, "Power mode" dropdown avaliable to select global power mode.
+
+NB: Fan can only be controled if Power Mode set to "Manual"!
+
+```
+How it works
+```
+
+Fan control is temerature sensor-driven, so first select one of temperature sensors.  
+Then, select which fan(s) should react on it's readings - you can select from none to all in any combination.  
+So select checkbox for fan(s) you need.
+
+After you doing so, currently selected (checked or not) fan settings will be shown at "Fan Settings" window - you will see selected fan RPMs at the top, and fan control curve (green lines).
+Now play with fan control curve - it defines fan boost at temperature level. X axle is temperature, Y axle is boost level.  
+You can left click (and drag until release mouse button) into the curve window to add point or select close point (if any) and move it.  
+You can click right mouse button at the graph point to remove it.  
+Big red dot represent current temperature-in-action and boost position.  
+
+Please keep in mind:
+- You can't remove first or last point of the curve.
+- If you move first or last point, it will keep it's temperature after button release - but you can set other boost level for it.
+- Then fan controlled by more, then one sensor, boost will be set to the maximal value across them. 
+
+"Reset" button reset currently selected fan curve to default one (0-0 boost).
+
+You can minimize application to tray pressing Minimize button (or the top one), left click on try icon restore application back, right click close application.
 
 ## ToDo:
 - [x] Temperature sensors reading
 - [ ] Eliminate "Test mode" requirement
-- [x] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
+- [ ] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
+  - [x] Alienware m15/m17 (any release)
+  - [ ] Older Alienware (weed to repair my old one to check)
+  - [ ] Area 51 (need ACPI dump from it!)
+  - [ ] Desktops (work in progress)
 - [x] SDK lib for easy sharing
-- [ ] GUI 
-- [ ] Temp-RPM curves and indirect RPM control
+- [X] GUI 
+- [X] Temp-RPM curves and indirect RPM control
 - [x] CPU power limit control
-- [ ] Dynamic power distribution
+- [ ] Dynamic power distribution (GPU boost)
 - [ ] `alienfx-gui` integration
 
 ## Tools Used

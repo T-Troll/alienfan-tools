@@ -50,13 +50,14 @@ void Usage() {
         << "unlock\t\tUnclock fan controls" << endl
         << "power=<value>\t\tSet TDP to this level" << endl
         << "getfans\t\t\tShow current fan boost level (0..100 - in percent)" << endl
-        << "setfans=<fan1>,<fan2>\tSet fans boost level (0..100 - in percent)" << endl
-        << "  Power level can be 0 - 60W unlocked, 1 - 45W, 2 - 45W+GPU boost, 3 - 60W, 4 - 75W" << endl;
+        << "setfans=<fan1>[,<fan2>]\tSet fans boost level (0..100 - in percent)" << endl
+        << "  Power level can be in 0..N - according to power states detected" << endl
+        << "  number of fan valuse should be the same as a number fans detected" << endl;
 }
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.5\n";
+    std::cout << "AlienFan-cli v0.0.6\n";
 
     AlienFan_SDK::Control acpi;
 
