@@ -65,6 +65,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             return FALSE;
         }
 
+        // minimize if needed
+        if (conf->startMinimized)
+            SendMessage(mDlg, WM_SIZE, SIZE_MINIMIZED, 0);
+
         if (conf->lastPowerStage >= 0)
             acpi->SetPower(conf->lastPowerStage);
 
@@ -147,7 +151,7 @@ void ReloadFanView(HWND hDlg, int cID) {
     ListView_InsertColumn(list, 0, &lCol);
     for (int i = 0; i < acpi->HowManyFans(); i++) {
         LVITEMA lItem;
-        string name = "Fan " + std::to_string(i + 1);
+        string name = "Fan " + to_string(i + 1);
         lItem.mask = LVIF_TEXT | LVIF_PARAM;
         lItem.iItem = i;
         lItem.iImage = 0;
@@ -166,7 +170,7 @@ void ReloadFanView(HWND hDlg, int cID) {
         }
     }
 
-    ListView_SetColumnWidth(list, 0, LVSCW_AUTOSIZE_USEHEADER);// csize.right - csize.left - 1);
+    ListView_SetColumnWidth(list, 0, LVSCW_AUTOSIZE_USEHEADER);
 }
 
 void SetTooltip(HWND tt, int x, int y) {
@@ -386,6 +390,9 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         ReloadFanView(hDlg, conf->lastSelectedFan);
         SetWindowLongPtr(fan_control, GWLP_WNDPROC, (LONG_PTR) FanCurve);
         toolTip = CreateToolTip(fan_control, NULL);
+
+        CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTWITHWINDOWS, conf->startWithWindows ? MF_CHECKED : MF_UNCHECKED);
+        CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
         return true; 
     } break;
     case WM_COMMAND:
@@ -413,6 +420,27 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             case IDC_BUT_CLOSE: case IDM_EXIT:
                 SendMessage(hDlg, WM_CLOSE, 0, 0);
                 break;
+            case IDM_SETTINGS_STARTWITHWINDOWS:
+            {
+                conf->startWithWindows = !conf->startWithWindows;
+                CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTWITHWINDOWS, conf->startWithWindows ? MF_CHECKED : MF_UNCHECKED);
+                char pathBuffer[2048];
+                string shellcomm;
+                if (conf->startWithWindows) {
+                    GetModuleFileNameA(NULL, pathBuffer, 2047);
+                    shellcomm = "Register-ScheduledTask -TaskName \"AlienFan-GUI\" -trigger $(New-ScheduledTaskTrigger -Atlogon) -settings $(New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -ExecutionTimeLimit 0) -action $(New-ScheduledTaskAction -Execute '"
+                        + string(pathBuffer) + "') -force -RunLevel Highest";
+                    ShellExecute(NULL, "runas", "powershell.exe", shellcomm.c_str(), NULL, SW_HIDE);
+                } else {
+                    shellcomm = "/delete /F /TN \"AlienFan-GUI\"";
+                    ShellExecute(NULL, "runas", "schtasks.exe", shellcomm.c_str(), NULL, SW_HIDE);
+                }
+            } break;
+            case IDM_SETTINGS_STARTMINIMIZED:
+            {
+                conf->startMinimized = !conf->startMinimized;
+                CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
+            } break;
             case IDC_BUT_RESET:
             {
                 temp_block* cur = conf->FindSensor(conf->lastSelectedSensor);
@@ -615,7 +643,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
             case NM_CLICK:
             case NM_RETURN:
-                ShellExecute(NULL, "open", "https://github.com/T-Troll/alienfx-tools", NULL, NULL, SW_SHOWNORMAL);
+                ShellExecute(NULL, "open", "https://github.com/T-Troll/alienfan-tools", NULL, NULL, SW_SHOWNORMAL);
                 break;
             } break;
         }

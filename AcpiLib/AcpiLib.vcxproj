@@ -165,6 +165,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Acpi.h" />
+    <ClInclude Include="Acpi1_0.h" />
+    <ClInclude Include="Acpi2_0.h" />
+    <ClInclude Include="Acpi3_0.h" />
+    <ClInclude Include="AcpiCommon.h" />
     <ClInclude Include="AcpiLib.h" />
     <ClInclude Include="AmlParser.h" />
     <ClInclude Include="framework.h" />

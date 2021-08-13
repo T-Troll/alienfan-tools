@@ -18,7 +18,7 @@ namespace AlienFan_SDK {
 	private:
 		HANDLE acc = NULL;
 		bool activated = false;
-		int RunMainCommand(short command, byte subcommand, byte value1 = 0, byte value2 = 0);
+		//int RunMainCommand(short command, byte subcommand, byte value1 = 0, byte value2 = 0);
 	public:
 		Control();
 		~Control();
@@ -34,6 +34,8 @@ namespace AlienFan_SDK {
 		int HowManyFans();
 		int HowManyPower();
 		int HowManySensors();
+
+		int RunMainCommand(short command, byte subcommand, byte value1 = 0, byte value2 = 0);
 
 		vector<ALIENFAN_SEN_INFO> sensors;
 		vector<USHORT> fans;

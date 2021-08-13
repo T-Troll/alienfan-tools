@@ -4,7 +4,7 @@ This is the side step from my [alienfx-tools](https://github.com/T-Troll/alienfx
 
 Tools avaliable:
 - `alienfan-cli` - simple fan control command line utility
-- `alienfan-cli` - Fan control GUI application
+- `alienfan-gui` - Fan control GUI application
 
 ## Disclamer
 - This tools utilize low-level ACPI functions access, this can be dangerous and can provide system hang, BSOD and even hardware damage! Use with care, at you own risk!
@@ -33,6 +33,40 @@ NB: You should have acpilib.dll and hwacc.sys into the same folder.
 - Notebooks: `Alienware m15/17R1` or later.
 - Desktops: <s>`Alienware Aurora R7` or later (with issues, need more testing).</s> Sorry, not supported now (different function mapping).
 
+## `alienfan-gui` usage
+
+GUI application for fan control.  
+Then you start it, you will see 3 main windows - Temperaturs (with current reading), Fans (with checkboxes and current RPM) and Fan setting (graph).  
+Also, "Power mode" dropdown avaliable to select global power mode.
+
+NB: Fans can only be controled if Power Mode set to "Manual"!
+
+```
+How it works
+```
+
+Fan control is temerature sensor-driven, so first select one of temperature sensors.  
+Then, select which fan(s) should react on it's readings - you can select from none to all in any combination.  
+So select checkbox for fan(s) you need.
+
+After you doing so, currently selected (checked or not) fan settings will be shown at "Fan Settings" window - you will see selected fan boost at the top, and the fan control curve (green lines).
+Now play with fan control curve - it defines fan boost by temperature level. X axle is temperature, Y axle is boost level.  
+You can left click (and drag until release mouse button) into the curve window to add point or select close point (if any) and move it.  
+You can click right mouse button at the graph point to remove it.  
+Big red dot represent current boost-in-action position.  
+
+Please keep in mind:
+- You can't remove first or last point of the curve.
+- If you move first or last point, it will keep it's temperature after button release - but you can set other boost level for it.
+- Then fan controlled by more, then one sensor, boost will be set to the maximal value across them. 
+
+"Reset" button reset currently selected fan curve to default one (0-0 boost).
+
+You can minimize application to tray pressing Minimize button (or the top one), left click on try icon restore application back, right click close application.
+There are two settings into application menu "Settings":
+- "Start with windows" - If checked, application will run at system start.
+- "Start minimized" - If checked, application hide into tray icon after start.
+
 ## `alienfan-cli` usage
 It's a simple CLI fan control utility for now, providing the same functionality as AWCC (well... a bit more already).
 ACPI can't control fans directly (well... i'm working on it), so all you can do is set fan boost (More RPM).
@@ -46,38 +80,20 @@ Avaliable commands:
 - `power=<value>` - Set PL1 to this predefined level. Possible levels autodetected from ACPI, see message at app start 
 - `getfans` - Show current fan RPMs boost
 - `setfans=<fan1>,<fan2>...` - Set fans RPM boost level (0..100 - in percent). Fan1 is for CPU fan, Fan2 for GPU one. Number of arguments should be the same as number of fans application detect
+- `direct=<id>,<subid>[,val,val]` - Issue direct Alienware interface command (see below)
 NB: Setting Power level to non-zero value disables manual fan control!
 
-## `alienfan-gui` usage
+`direct` command is for testing various functions of the main Alienware ACPI function.  
+If default functions doesn't works, you can check and try to find you system subset.
 
-GUI application for fan control.  
-Then you start it, you will see 3 main windows - Temperaturs (with current reading), Fans (with checkboxes) and Fan setting (graph).  
-Also, "Power mode" dropdown avaliable to select global power mode.
+For example: issuing command `direct=20,5,50` return fam RPM for fan #1 on laptop, but for desktop the command should be different.
 
-NB: Fan can only be controled if Power Mode set to "Manual"!
+You can check possible commands and values yourself, opening you system ACPI dump file and searching for `Method(WMAX` function.  
+It accept 3 parameters - first is not used, second is a command, and the third is byte array of sumcommand and 2 value bytes.  
+Looking inside this method can reveal commands supported for you system and what they do.  
+For example, for Aurora R7 command `direct=3,N` return fan ID for fan N or -1 (fail) if fan absent.
 
-```
-How it works
-```
-
-Fan control is temerature sensor-driven, so first select one of temperature sensors.  
-Then, select which fan(s) should react on it's readings - you can select from none to all in any combination.  
-So select checkbox for fan(s) you need.
-
-After you doing so, currently selected (checked or not) fan settings will be shown at "Fan Settings" window - you will see selected fan RPMs at the top, and fan control curve (green lines).
-Now play with fan control curve - it defines fan boost at temperature level. X axle is temperature, Y axle is boost level.  
-You can left click (and drag until release mouse button) into the curve window to add point or select close point (if any) and move it.  
-You can click right mouse button at the graph point to remove it.  
-Big red dot represent current temperature-in-action and boost position.  
-
-Please keep in mind:
-- You can't remove first or last point of the curve.
-- If you move first or last point, it will keep it's temperature after button release - but you can set other boost level for it.
-- Then fan controlled by more, then one sensor, boost will be set to the maximal value across them. 
-
-"Reset" button reset currently selected fan curve to default one (0-0 boost).
-
-You can minimize application to tray pressing Minimize button (or the top one), left click on try icon restore application back, right click close application.
+You can share commands you find with me, and i'll add you into applications.
 
 ## ToDo:
 - [x] Temperature sensors reading
@@ -85,7 +101,7 @@ You can minimize application to tray pressing Minimize button (or the top one), 
 - [ ] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
   - [x] Alienware m15/m17 (any release)
   - [ ] Older Alienware (weed to repair my old one to check)
-  - [ ] Area 51 (need ACPI dump from it!)
+  - [ ] Area 51 (need ACPI dump from it)
   - [ ] Desktops (work in progress)
 - [x] SDK lib for easy sharing
 - [X] GUI 

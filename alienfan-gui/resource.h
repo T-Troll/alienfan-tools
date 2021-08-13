@@ -19,6 +19,10 @@
 #define IDC_FAN_RPM                     1009
 #define IDC_SYSLINK_HOMEPAGE            1010
 #define IDC_FAN_CURVE                   1012
+#define IDM_SETTINGS_STARTWITHWINDOWS   32776
+#define ID_SETTINGS_STARTMINIMIZED      32777
+#define IDC_SETTINGS_STARTMINIMIZED     32778
+#define IDM_SETTINGS_STARTMINIMIZED     32779
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -27,7 +31,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        130
-#define _APS_NEXT_COMMAND_VALUE         32775
+#define _APS_NEXT_COMMAND_VALUE         32780
 #define _APS_NEXT_CONTROL_VALUE         1013
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

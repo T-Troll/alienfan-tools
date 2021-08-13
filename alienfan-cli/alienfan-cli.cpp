@@ -43,21 +43,22 @@ void DumpAcpi(ACPI_NS_DATA data) {
 void Usage() {
     cout << "Usage: alienfan-cli [command[=value{,value}] [command...]]" << endl
         << "Avaliable commands: " << endl
-        << "usage, help\t\tShow this usage" << endl
-        << "dump\t\t\tDump all ACPI values avaliable (for debug and new hardware support)" << endl
-        << "rpm\t\t\tShow fan(s) RPMs" << endl
-        << "temp\t\t\tShow known temperature sensors values" << endl
-        << "unlock\t\tUnclock fan controls" << endl
-        << "power=<value>\t\tSet TDP to this level" << endl
-        << "getfans\t\t\tShow current fan boost level (0..100 - in percent)" << endl
-        << "setfans=<fan1>[,<fan2>]\tSet fans boost level (0..100 - in percent)" << endl
+        << "usage, help\t\t\tShow this usage" << endl
+        << "dump\t\t\t\tDump all ACPI values avaliable (for debug and new hardware support)" << endl
+        << "rpm\t\t\t\tShow fan(s) RPMs" << endl
+        << "temp\t\t\t\tShow known temperature sensors values" << endl
+        << "unlock\t\t\t\tUnclock fan controls" << endl
+        << "power=<value>\t\t\tSet TDP to this level" << endl
+        << "getfans\t\t\t\tShow current fan boost level (0..100 - in percent)" << endl
+        << "setfans=<fan1>[,<fan2>]\t\tSet fans boost level (0..100 - in percent)" << endl
+        << "direct=<id>,<subid>[,val,val]\tIssue direct interface command (for testing)" << endl
         << "  Power level can be in 0..N - according to power states detected" << endl
-        << "  number of fan valuse should be the same as a number fans detected" << endl;
+        << "  number of fan boost values should be the same as a number fans detected" << endl;
 }
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.6\n";
+    std::cout << "AlienFan-cli v0.0.7\n";
 
     AlienFan_SDK::Control acpi;
 
@@ -171,6 +172,27 @@ int main(int argc, char* argv[])
                             cout << "Set fan level failed!" << endl;
                             break;
                         }
+                    }
+                    continue;
+                }
+                if (command == "direct") {
+                    int res = 0;
+                    if (args.size() < 2) {
+                        cout << "Direct: incorrect arguments (should be 2 or 3)" << endl;
+                        continue;
+                    }
+                    USHORT command = atoi(args[0].c_str());
+                    byte subcommand = atoi(args[1].c_str()),
+                       value1 = 0, value2 = 0;
+                    if (args.size() > 2)
+                        value1 = atoi(args[2].c_str());
+                    if (args.size() > 3)
+                        value2 = atoi(args[3].c_str());
+                    if ((res = acpi.RunMainCommand(command, subcommand, value1, value2)) >=0)
+                        cout << "Direct call result: " << res << endl;
+                    else {
+                        cout << "Direct call failed!" << endl;
+                        break;
                     }
                     continue;
                 }

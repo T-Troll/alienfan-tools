@@ -70,6 +70,20 @@ void ConfigHelper::Load() {
 
 	RegGetValue(hKey1,
 				NULL,
+				TEXT("StartAtBoot"),
+				RRF_RT_DWORD | RRF_ZEROONFAILURE,
+				NULL,
+				&startWithWindows,
+				(LPDWORD)&size);
+	RegGetValue(hKey1,
+				NULL,
+				TEXT("StartMinimized"),
+				RRF_RT_DWORD | RRF_ZEROONFAILURE,
+				NULL,
+				&startMinimized,
+				(LPDWORD)&size);
+	RegGetValue(hKey1,
+				NULL,
 				TEXT("LastPowerStage"),
 				RRF_RT_DWORD | RRF_ZEROONFAILURE,
 				NULL,
@@ -147,7 +161,23 @@ void ConfigHelper::Load() {
 void ConfigHelper::Save() {
 	char name[256];
 	DWORD dwDisposition;
-
+	
+	RegSetValueEx(
+		hKey1,
+		TEXT("StartAtBoot"),
+		0,
+		REG_DWORD,
+		(BYTE*)&startWithWindows,
+		sizeof(DWORD)
+	);
+	RegSetValueEx(
+		hKey1,
+		TEXT("StartMinimized"),
+		0,
+		REG_DWORD,
+		(BYTE*)&startMinimized,
+		sizeof(DWORD)
+	);
 	RegSetValueEx(
 		hKey1,
 		TEXT("LastPowerStage"),

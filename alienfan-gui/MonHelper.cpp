@@ -49,14 +49,16 @@ DWORD WINAPI CMonProc(LPVOID param) {
 	boostSets.resize(src->acpi->HowManyFans());
 
 	HWND tempList = GetDlgItem(src->dlg, IDC_TEMP_LIST),
+		fanList = GetDlgItem(src->dlg, IDC_FAN_LIST),
 		rpmState = GetDlgItem(src->dlg, IDC_FAN_RPM),
 		curveBlock = GetDlgItem(src->dlg, IDC_FAN_CURVE);
 
 	while (WaitForSingleObject(src->stopEvent, 500) == WAIT_TIMEOUT) {
 		// update values.....
+		bool visible = !IsIconic(src->dlg);
 
 		// temps..
-		for (int i = 0; i < src->acpi->HowManySensors(); i++) {
+		for (int i = 0; visible && i < src->acpi->HowManySensors(); i++) {
 			int sValue = src->acpi->GetTempValue(i);
 			if (sValue != senValues[i]) {
 				senValues[i] = sValue;
@@ -66,15 +68,21 @@ DWORD WINAPI CMonProc(LPVOID param) {
 		}
 
 		// fans...
-		if (src->conf->lastSelectedFan != -1) {
-			for (int i = 0; i < src->acpi->HowManyFans(); i++) {
+		for (int i = 0; i < src->acpi->HowManyFans(); i++) {
+			boostSets[i] = 0;
+			if (visible) {
 				int rpValue = src->acpi->GetFanRPM(i);
-				boostValues[i] = src->acpi->GetFanValue(i);
-				boostSets[i] = 0;
+				int boostValue = src->acpi->GetFanValue(i);
 				if (rpValue != fanValues[i]) {
 					// Update RPM block...
+					fanValues[i] = rpValue;
+					string name = "Fan " + to_string(i+1) + " (" + to_string(rpValue) + ")";
+					ListView_SetItemText(fanList, i, 0, (LPSTR) name.c_str());
+				}
+				if (boostValue != boostValues[i]) {
+					boostValues[i] = boostValue;
 					if (i == src->conf->lastSelectedFan) {
-						string rpmText = "Current RPM: " + to_string(rpValue);
+						string rpmText = "Current boost: " + to_string(boostValue);
 						Static_SetText(rpmState, rpmText.c_str());
 					}
 				}
@@ -106,7 +114,7 @@ DWORD WINAPI CMonProc(LPVOID param) {
 			for (int i = 0; i < src->acpi->HowManyFans(); i++)
 				if (boostSets[i] != boostValues[i]) {
 					src->acpi->SetFanValue(i, boostSets[i]);
-					if (i == src->conf->lastSelectedFan)
+					if (visible && i == src->conf->lastSelectedFan )
 						SendMessage(curveBlock, WM_PAINT, 0, 0);
 				}
 		}
