@@ -104,10 +104,13 @@ You can share commands you find with me, and i'll add you into applications.
   - [ ] Area 51 (need ACPI dump from it)
   - [ ] Desktops (work in progress)
 - [x] SDK lib for easy sharing
+- [ ] Driver file embedding into app
 - [X] GUI 
 - [X] Temp-RPM curves and indirect RPM control
 - [x] CPU power limit control
-- [ ] Dynamic power distribution (GPU boost)
+- [ ] GPU power contol
+- [ ] Direct fan RPM control for R1
+- [ ] Dynamic power distribution (CPU/GPU boost)
 - [ ] `alienfx-gui` integration
 
 ## Tools Used
