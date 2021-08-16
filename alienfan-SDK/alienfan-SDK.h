@@ -14,14 +14,48 @@ namespace AlienFan_SDK {
 		bool isFromAWC = false;
 	};
 
+	struct ALIENFAN_COMMAND {
+		short com;
+		byte sub;
+	};
+
+	struct ALIENFAN_DEVICE {
+		ALIENFAN_COMMAND getFanID;
+		ALIENFAN_COMMAND getPowerID;
+		ALIENFAN_COMMAND getZoneSensorID;
+		ALIENFAN_COMMAND getFanRPM;
+		ALIENFAN_COMMAND getFanBoost;
+		ALIENFAN_COMMAND setFanBoost;
+		ALIENFAN_COMMAND getTemp;
+		ALIENFAN_COMMAND setPower;
+		ALIENFAN_COMMAND setGPUPower;
+	};
+
+	const static ALIENFAN_DEVICE devs[2] = {
+		{ // m15/m17
+			0x13,   1, // FanID
+			0x14,   3, // PowerID
+			0x13,   2, // ZoneSensor ID
+			0x14,   5, // RPM
+			0x14, 0xc, // Boost
+			0x15,   2, // Set boost
+			0x14,   4, // Temp
+			0x15,   1, // Set Power
+			   0,   0  // GPU power
+		}, 
+		{ 0 }
+	};
+
 	class Control {
 	private:
 		HANDLE acc = NULL;
+		short aDev = -1;
 		bool activated = false;
-		//int RunMainCommand(short command, byte subcommand, byte value1 = 0, byte value2 = 0);
+		//int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
 	public:
 		Control();
 		~Control();
+		void UnloadService();
 		bool Probe();
 		int GetFanRPM(int fanID);
 		int GetFanValue(int fanID);
@@ -35,7 +69,7 @@ namespace AlienFan_SDK {
 		int HowManyPower();
 		int HowManySensors();
 
-		int RunMainCommand(short command, byte subcommand, byte value1 = 0, byte value2 = 0);
+		int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
 
 		vector<ALIENFAN_SEN_INFO> sensors;
 		vector<USHORT> fans;

@@ -84,9 +84,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         delete mon;
 
-    } else
+    } else {
         MessageBox(NULL, "No Alienware hardware detected, exiting!\nAre you launch app as administrator?", "Fatal error",
-               MB_OK | MB_ICONSTOP);
+                   MB_OK | MB_ICONSTOP);
+        acpi->UnloadService();
+    }
     delete acpi;
     delete conf;
 
@@ -307,13 +309,13 @@ void ReloadTempView(HWND hDlg, int cID) {
     ListView_InsertColumn(list, 1, &lCol);
     for (int i = 0; i < acpi->HowManySensors(); i++) {
         LVITEMA lItem;
-        string name = "100";// to_string(acpi->GetTempValue(i));
+        string name = "100";
         lItem.mask = LVIF_TEXT | LVIF_PARAM;
         lItem.iItem = i;
         lItem.iImage = 0;
         lItem.iSubItem = 0;
         lItem.lParam = i;
-        lItem.pszText = (LPSTR) name.c_str();// acpi->sensors[i].name.c_str();
+        lItem.pszText = (LPSTR) name.c_str();
         if (i == cID) {
             lItem.mask |= LVIF_STATE;
             lItem.state = LVIS_SELECTED;
@@ -407,6 +409,7 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 switch (HIWORD(wParam))
                 {
                 case CBN_SELCHANGE: {
+                    conf->lastPowerStage = pid;
                     acpi->SetPower(pid);
                 } break;
                 }
@@ -656,6 +659,12 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    fan_block* cFan = conf->FindFanBlock(conf->FindSensor(conf->lastSelectedSensor), conf->lastSelectedFan);
+    RECT cArea;
+    GetClientRect(hDlg, &cArea);
+    cArea.right -= 1;
+    cArea.bottom -= 1;
+
     switch (message) {
     //case WM_COMMAND: {
     //    int i = 0;
@@ -669,11 +678,10 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     } break;
     case WM_MOUSEMOVE: { 
         int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
+
         if (lastFanPoint && wParam & MK_LBUTTON) {
-            RECT cArea;
-            GetClientRect(hDlg, &cArea);
-            int temp = (100 * (x - cArea.left)) / (cArea.right - cArea.left),
-                boost = (100 * (cArea.bottom - y)) / (cArea.bottom - cArea.top);
+            int temp = (100 * (GET_X_LPARAM(lParam) - cArea.left)) / (cArea.right - cArea.left),
+                boost = (100 * (cArea.bottom - GET_Y_LPARAM(lParam))) / (cArea.bottom - cArea.top);
             lastFanPoint->temp = temp < 0 ? 0 : temp > 100 ? 100 : temp;
             lastFanPoint->boost = boost < 0 ? 0 : boost > 100 ? 100 : boost;
             DrawFan(GetParent(hDlg), 1, x, y);
@@ -683,14 +691,11 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_LBUTTONDOWN:
     {
         SetCapture(hDlg);
-        fan_block* cFan = conf->FindFanBlock(conf->FindSensor(conf->lastSelectedSensor), conf->lastSelectedFan);
         if (cFan) {
             // check and add point
-            int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
-            RECT cArea;
-            GetClientRect(hDlg, &cArea);
-            int temp = (100 * (x - cArea.left)) / (cArea.right - cArea.left),
-                boost = (100 * (cArea.bottom - y)) / (cArea.bottom - cArea.top);
+            // int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
+            int temp = (100 * (GET_X_LPARAM(lParam) - cArea.left)) / (cArea.right - cArea.left),
+                boost = (100 * (cArea.bottom - GET_Y_LPARAM(lParam))) / (cArea.bottom - cArea.top);
             for (vector<fan_point>::iterator fPi = cFan->points.begin();
                  fPi < cFan->points.end(); fPi++) {
                 if (fPi->temp - DRAG_ZONE <= temp && fPi->temp + DRAG_ZONE >= temp) {
@@ -710,7 +715,6 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_LBUTTONUP: {
         ReleaseCapture();
         // re-sort array.
-        fan_block* cFan = conf->FindFanBlock(conf->FindSensor(conf->lastSelectedSensor), conf->lastSelectedFan);
         if (cFan) {
             for (vector<fan_point>::iterator fPi = cFan->points.begin();
                  fPi < cFan->points.end() - 1; fPi++)
@@ -726,14 +730,11 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     } break;
     case WM_RBUTTONUP: {
         // remove point from curve...
-        fan_block* cFan = conf->FindFanBlock(conf->FindSensor(conf->lastSelectedSensor), conf->lastSelectedFan);
         if (cFan && cFan->points.size() > 2) {
             // check and remove point
-            int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
-            RECT cArea;
-            GetClientRect(hDlg, &cArea);
-            int temp = (100 * (x - cArea.left)) / (cArea.right - cArea.left),
-                boost = (100 * (cArea.bottom - y)) / (cArea.bottom - cArea.top);
+            //int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
+            int temp = (100 * (GET_X_LPARAM(lParam) - cArea.left)) / (cArea.right - cArea.left),
+                boost = (100 * (cArea.bottom - GET_Y_LPARAM(lParam))) / (cArea.bottom - cArea.top);
             for (vector<fan_point>::iterator fPi = cFan->points.begin() + 1;
                  fPi < cFan->points.end() - 1; fPi++)
                 if (fPi->temp - DRAG_ZONE <= temp && fPi->temp + DRAG_ZONE >= temp ) {
@@ -746,13 +747,14 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     } break;
     //case WM_SETCURSOR:
     //{
-    //    //TRACKMOUSEEVENT mEv = {0};
-    //    //mEv.cbSize = sizeof(TRACKMOUSEEVENT);
-    //    //mEv.dwFlags = TME_HOVER | TME_LEAVE;
-    //    //mEv.dwHoverTime = HOVER_DEFAULT;
-    //    //mEv.hwndTrack = hDlg;
-    //    //TrackMouseEvent(&mEv);
-    //    return true;
+    //    SetCursor(LoadCursor(hInst, IDC_ARROW));
+    ////    //TRACKMOUSEEVENT mEv = {0};
+    ////    //mEv.cbSize = sizeof(TRACKMOUSEEVENT);
+    ////    //mEv.dwFlags = TME_HOVER | TME_LEAVE;
+    ////    //mEv.dwHoverTime = HOVER_DEFAULT;
+    ////    //mEv.hwndTrack = hDlg;
+    ////    //TrackMouseEvent(&mEv);
+    ////    return true;
     //} break;
     case WM_NCHITTEST:
         return HTCLIENT;

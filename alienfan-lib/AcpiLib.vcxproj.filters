@@ -14,12 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="AcpiLib.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -50,14 +44,11 @@
     <ClInclude Include="AcpiCommon.h">
       <Filter>Definitions</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.c">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="pch.c">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="acpilib.c">
       <Filter>Source</Filter>
     </ClCompile>
@@ -81,5 +72,8 @@
     <None Include="Source.def">
       <Filter>Source</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="AcpiLib.rc" />
   </ItemGroup>
 </Project>

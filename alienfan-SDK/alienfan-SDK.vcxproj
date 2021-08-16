@@ -133,6 +133,9 @@
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -163,7 +166,7 @@
     <ClCompile Include="alienfan-SDK.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AcpiLib\AcpiLib.vcxproj">
+    <ProjectReference Include="..\alienfan-lib\AcpiLib.vcxproj">
       <Project>{ba47c298-bb09-4d40-8197-1ff1ec55ac02}</Project>
     </ProjectReference>
   </ItemGroup>

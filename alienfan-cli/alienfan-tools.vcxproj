@@ -79,6 +79,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <AllProjectIncludesArePublic>true</AllProjectIncludesArePublic>
+    <AllProjectBMIsArePublic>true</AllProjectBMIsArePublic>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -147,7 +149,7 @@
     <ClCompile Include="alienfan-cli.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AcpiLib\AcpiLib.vcxproj">
+    <ProjectReference Include="..\alienfan-lib\AcpiLib.vcxproj">
       <Project>{ba47c298-bb09-4d40-8197-1ff1ec55ac02}</Project>
     </ProjectReference>
     <ProjectReference Include="..\alienfan-SDK\alienfan-SDK.vcxproj">

@@ -133,9 +133,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <StringPooling>false</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -172,6 +172,11 @@
     <ProjectReference Include="..\alienfan-SDK\alienfan-SDK.vcxproj">
       <Project>{41343b7c-6c9f-4ad4-9d27-050b3d76290d}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\x64\Release\HwAcc.sys" />
+    <None Include="..\x64\Release\HwAcc\HwAcc.sys" />
+    <None Include="driver1.bin" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -15,7 +15,6 @@ Environment:
     User mode only.
 
 --*/
-#include "pch.h"
 #include <tchar.h>
 #include <assert.h>
 #include "acpilib.h"

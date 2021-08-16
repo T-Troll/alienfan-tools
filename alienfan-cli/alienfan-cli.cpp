@@ -58,7 +58,7 @@ void Usage() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.7\n";
+    std::cout << "AlienFan-cli v0.0.8\n";
 
     AlienFan_SDK::Control acpi;
 
@@ -196,7 +196,23 @@ int main(int argc, char* argv[])
                     }
                     continue;
                 }
-                //if (command == "test") { // pseudo block for tes modules
+                if (command == "test") { // pseudo block for tes modules
+                    // _SB.PCI0.LPCB.EC0.DRCB
+                    TCHAR command[] = TEXT("\\____SB_PCI0LPCBEC0_DRCB");
+                    TCHAR command2[] = TEXT("\\____SB_PCI0LPCBEC0_CRLV");
+                    PACPI_EVAL_OUTPUT_BUFFER res = NULL;
+                    USHORT nsType = GetNSType(command);
+                    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command, &nsType);
+                    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
+                    ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
+                    acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0xd2);
+                    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command2, acpiargs);
+                    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command, acpiargs);
+                    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
+                    if (res) {
+                        NotifyDevice((TCHAR*)TEXT("\\____SB_PCI0PEG0PEGP"), 0xd2);
+                        cout << res->Argument[0].Argument << endl;
+                    }
                 //    ////_SB_PCI0B0D4PMAX PTDP PMIN TMAX PWRU
                 //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"));
                 //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"), &nType);
@@ -224,8 +240,8 @@ int main(int argc, char* argv[])
                 //    //    cout << "PWRU = " << res->Argument[0].Argument << endl;
                 //    //}
                 //    int tRes = RunMainCommand(0x6, 0x0);
-                //    continue;
-                //}
+                    continue;
+                }
                 cout << "Unknown command - " << command << ", use \"usage\" or \"help\" for information" << endl;
             }
         } else {

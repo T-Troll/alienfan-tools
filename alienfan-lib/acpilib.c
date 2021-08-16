@@ -15,10 +15,11 @@ Environment:
     User mode only.
 
 --*/
-#include "pch.h"
 #include "acpilib.h"
 #include "service.h"
 #include "mdmap.h"
+
+#pragma comment(lib,"setupapi.lib")
 
 typedef ACPI_NAMESPACE ACPI_NS;
 ACPI_NAMESPACE* GetAcpiNsFromNsAddr(PVOID pVoid);
@@ -73,7 +74,7 @@ ParseReturnData(
     PACPI_EVAL_OUTPUT_BUFFER pAcpiData
 );
 
-void CloseDll()
+VOID CloseDll()
 {
     CloseAcpiService(ghLocalDriver);
 }
@@ -199,7 +200,7 @@ Return Value:
 
         err = GetLastError();
 
-        if (err == ERROR_SERVICE_EXISTS) {
+        if (err == ERROR_DUPLICATE_SERVICE_NAME || err == ERROR_SERVICE_EXISTS) {
             //
             // Ignore this error.
             //
@@ -971,7 +972,7 @@ Return Value:
 
 --*/
 {
-    TCHAR       driverLocation[MAX_PATH];
+    TCHAR       driverLocation[MAX_PATH] = {0};
     ReleaseMethodMap();
     ReleaseAcpiNS();
     if (hDriver != INVALID_HANDLE_VALUE) {

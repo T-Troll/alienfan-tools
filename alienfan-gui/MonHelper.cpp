@@ -43,6 +43,7 @@ void MonHelper::Stop() {
 DWORD WINAPI CMonProc(LPVOID param) {
 	MonHelper* src = (MonHelper*) param;
 	vector<int> senValues, fanValues, boostValues, boostSets;
+	int lastBoostValue = -1;
 	senValues.resize(src->acpi->HowManySensors());
 	fanValues.resize(src->acpi->HowManyFans());
 	boostValues.resize(src->acpi->HowManyFans());
@@ -79,8 +80,9 @@ DWORD WINAPI CMonProc(LPVOID param) {
 					string name = "Fan " + to_string(i+1) + " (" + to_string(rpValue) + ")";
 					ListView_SetItemText(fanList, i, 0, (LPSTR) name.c_str());
 				}
-				if (boostValue != boostValues[i]) {
-					boostValues[i] = boostValue;
+				boostValues[i] = boostValue;
+				if (boostValue != lastBoostValue) {
+					lastBoostValue = boostValue;
 					if (i == src->conf->lastSelectedFan) {
 						string rpmText = "Current boost: " + to_string(boostValue);
 						Static_SetText(rpmState, rpmText.c_str());
@@ -103,6 +105,7 @@ DWORD WINAPI CMonProc(LPVOID param) {
 								(fan->points[k].boost - fan->points[k - 1].boost) *
 								(senValues[sen->sensorIndex] - fan->points[k - 1].temp) /
 								(fan->points[k].temp - fan->points[k - 1].temp);
+							tBoost = tBoost < 0 ? 0 : tBoost > 100 ? 100 : tBoost;
 							if (tBoost > boostSets[fan->fanIndex])
 								boostSets[fan->fanIndex] = tBoost;
 							break;

@@ -29,7 +29,7 @@ Environment:
 #include <strsafe.h>
 #include <Setupapi.h>
 #include <devioctl.h>
-#include "..//HwAcc/ioctl.h"
+#include "../HwAcc/Ioctl.h"
 #include "mdmap.h"
 
 //#define FIELD_OFFSET(type, field) (ULONG_PTR)(&((type *)0)->field)
@@ -40,49 +40,40 @@ Environment:
 extern "C" {
 #endif
 
-#ifdef ACPILIB_EXPORTS
-#define ACPI_LIB_FUNCTION __declspec(dllexport)
-#else
-#define ACPI_LIB_FUNCTION __declspec(dllimport)
-#endif
+//#ifdef ACPILIB_EXPORTS
+//#define ACPI_LIB_FUNCTION __declspec(dllexport)
+//#else
+//#define ACPI_LIB_FUNCTION __declspec(dllimport)
+//#endif
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+#define ACPI_LIB_FUNCTION 
+
+ACPI_LIB_FUNCTION
+VOID
+APIENTRY
+CloseDll();
+
+ACPI_LIB_FUNCTION
 VOID
 APIENTRY
 CloseAcpiService(
     HANDLE hDriver
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 HANDLE
 APIENTRY
 OpenAcpiService(
     );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOLEAN
 APIENTRY
 OpenAcpiDevice(
     __in HANDLE hDriver
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOL
 APIENTRY
 LoadNotifiyMethod(
@@ -91,22 +82,14 @@ LoadNotifiyMethod(
     ULONG       uSize
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 void
 APIENTRY
 UnloadNotifiyMethod(
     HANDLE      hDriver
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOL
 APIENTRY
 EvalAcpiNS(
@@ -116,11 +99,7 @@ EvalAcpiNS(
     ULONG* puLength
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOL
 APIENTRY
 EvalAcpiNSArg(
@@ -130,11 +109,7 @@ EvalAcpiNSArg(
     UINT Size
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 PVOID
 APIENTRY
 EvalAcpiNSArgOutput(
@@ -142,22 +117,14 @@ EvalAcpiNSArgOutput(
     ACPI_EVAL_INPUT_BUFFER_COMPLEX* pComplexInput
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 PVOID
 APIENTRY
 EvalAcpiNSOutput(
     TCHAR* pPath
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 PVOID
 APIENTRY
 ReadAcpiMemory(
@@ -166,11 +133,7 @@ ReadAcpiMemory(
     ULONG  Size
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOLEAN
 APIENTRY
 QueryAcpiNS(
@@ -179,65 +142,41 @@ QueryAcpiNS(
     UINT            MethodStartIndex
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 ACPI_METHOD_MAP*
 APIENTRY
 GetMethod(
     UINT32 NameSeg
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 void
 APIENTRY
 ReleaseAcpiNS(
 );
 
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOLEAN
 APIENTRY
 QueryAcpiNSInLib(
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 void
 APIENTRY
 SaveAcpiObjects(
     TCHAR* chFile
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 void
 APIENTRY
 LoadAcpiObjects(
     TCHAR* chFile
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 UINT
 APIENTRY
 GetNamePath(
@@ -245,11 +184,7 @@ GetNamePath(
     BYTE* pChild
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 int
 APIENTRY
 GetNamePathFromPath(
@@ -257,22 +192,14 @@ GetNamePathFromPath(
     TCHAR* puChild
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 USHORT
 APIENTRY
 GetNameType(
     TCHAR* pParent
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOLEAN
 APIENTRY
 GetNameIntValue(
@@ -280,11 +207,7 @@ GetNameIntValue(
     ULONG64* uLong64
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 int
 APIENTRY
 GetNameStringValue(
@@ -292,11 +215,7 @@ GetNameStringValue(
     TCHAR* pString
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 int
 APIENTRY
 GetNameAddrFromPath(
@@ -305,34 +224,22 @@ GetNameAddrFromPath(
 );
 
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 PVOID
 APIENTRY
 GetNameAddr(
     TCHAR* pParent
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
-void
-APIENTRY
-GetNameFromAddr(
-    ACPI_NAMESPACE* pAcpiNS,
-    TCHAR* pName
-);
+//ACPI_LIB_FUNCTION
+//void
+//APIENTRY
+//GetNameFromAddr(
+//    ACPI_NS* pAcpiNS,
+//    TCHAR* pName
+//);
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 UINT64
 APIENTRY
 AslFromPath(
@@ -340,11 +247,7 @@ AslFromPath(
     TCHAR* pAsl
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 UINT64
 APIENTRY
 EvalAcpiNSAndParse(
@@ -352,11 +255,7 @@ EvalAcpiNSAndParse(
     TCHAR* pAsl
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 BOOLEAN
 APIENTRY
 GetArgsCount(
@@ -364,11 +263,7 @@ GetArgsCount(
     ULONG64* uLong64
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 PVOID
 PutBuffArg(
     PVOID   pArgs,
@@ -376,11 +271,7 @@ PutBuffArg(
     UCHAR* pBuf
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 PVOID
 PutStringArg(
     PVOID   pArgs,
@@ -388,22 +279,14 @@ PutStringArg(
     TCHAR*  pString
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 PVOID
 PutIntArg(
     PVOID   pArgs,
     UINT64  value
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 UINT64
 APIENTRY
 EvalAcpiNSArgAndParse(
@@ -412,11 +295,7 @@ EvalAcpiNSArgAndParse(
     TCHAR* pAsl
 );
 
-#ifdef ACPILIB_EXPORTS
-__declspec(dllexport)
-#else
-__declspec(dllimport)
-#endif
+ACPI_LIB_FUNCTION
 void
 APIENTRY
 FreeMemory(
@@ -456,7 +335,7 @@ GetRawData(
 );
 
 #ifdef __cplusplus
-  }
+}
 #endif
 
 #endif
