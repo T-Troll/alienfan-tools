@@ -84,7 +84,7 @@ Return Value:
 
 	status = IoCallDriver(Pdo, irp);
 
-	DebugPrint(("SendDownStreamIrp Result %08X\n", status));
+	//DebugPrint(("SendDownStreamIrp Result %08X\n", status));
 	if (status == STATUS_PENDING) {
 		// Wait for the IRP to be completed, then grab the real status code
 		KeWaitForSingleObject(

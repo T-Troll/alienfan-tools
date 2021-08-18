@@ -78,7 +78,7 @@ Return Value:
 	RtlInitUnicodeString(&ntUnicodeString, NT_DEVICE_NAME);
 
 	//DbgBreakPoint ();
-	DebugPrint(("Entry Point"));
+	DebugPrint(("HWACC: Entry Point"));
 
 	//
 
@@ -93,10 +93,10 @@ Return Value:
 
 	if (!NT_SUCCESS(ntStatus))
 	{
-		DebugPrint(("Couldn't create the device object\n"));
+		DebugPrint(("HWACC: Couldn't create the device object\n"));
 		return ntStatus;
 	}
-	DebugPrint(("Create the device object successfully\n"));
+	DebugPrint(("HWACC: Create the device object successfully\n"));
 	//
 	// Initialize the driver object with this driver's entry points.
 	//
@@ -125,9 +125,11 @@ Return Value:
 		//
 		// Delete everything that this routine has allocated.
 		//
-		DebugPrint(("Couldn't create symbolic link\n"));
+		DebugPrint(("HWACC: Couldn't create symbolic link\n"));
 		IoDeleteDevice(deviceObject);
 	}
+
+	DebugPrint(("HWACC: Init done\n"));
 
 	return ntStatus;
 }
@@ -254,6 +256,7 @@ Return Value:
 	{
 		IoDeleteDevice(deviceObject);
 	}
+	DebugPrint(("HWACC: Device unloaded\n"));
 }
 
 
@@ -302,6 +305,12 @@ Return Value:
 	PAGED_CODE();
 
 	pIrpStack = IoGetCurrentIrpStackLocation(pIrp);
+
+	if (!pIrpStack) {
+		DebugPrint(("HWACC: Internal error - zero stack\n"));
+		return STATUS_INTERNAL_ERROR;
+	}
+
 	pLDI = (PLOCAL_DEVICE_INFO)DeviceObject->DeviceExtension;    // Get local info struct
 	inBufLength = pIrpStack->Parameters.DeviceIoControl.InputBufferLength;
 	outBufLength = pIrpStack->Parameters.DeviceIoControl.OutputBufferLength;

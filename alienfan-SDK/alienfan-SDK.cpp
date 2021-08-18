@@ -10,12 +10,12 @@ namespace AlienFan_SDK {
 	// AMW interface com - 3 parameters (not used, com, buffer).
 	TCHAR* mainCommand = (TCHAR*) TEXT("\\____SB_AMW1WMAX");
 
-	Control::Control() {
+	Control::Control(int driverID) {
+		SetBinaryID(driverID);
 		activated = (acc = OpenAcpiService()) && QueryAcpiNSInLib();
 	}
 	Control::~Control() {
 		sensors.clear();
-		ReleaseAcpiNS();
 		CloseDll();
 	}
 

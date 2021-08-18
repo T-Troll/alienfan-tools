@@ -53,7 +53,7 @@ namespace AlienFan_SDK {
 		bool activated = false;
 		//int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
 	public:
-		Control();
+		Control(int driverID);
 		~Control();
 		void UnloadService();
 		bool Probe();

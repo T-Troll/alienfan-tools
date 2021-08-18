@@ -1,8 +1,0 @@
-﻿  Building 'AcpiLib' with toolset 'WindowsApplicationForDrivers10.0' and the 'Desktop' target platform.
-  AmlHandlerData.c
-  AmlParser.c
-  Data.c
-  acpilib.c
-  mdmap.c
-  namestack.c
-  AcpiLib.vcxproj -> C:\work\DevStudio\alienfan-tools\x64\Release\AcpiLib.lib

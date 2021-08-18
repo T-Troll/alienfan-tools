@@ -44,9 +44,6 @@
     <ClInclude Include="AcpiCommon.h">
       <Filter>Definitions</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="acpilib.c">
@@ -72,8 +69,5 @@
     <None Include="Source.def">
       <Filter>Source</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="AcpiLib.rc" />
   </ItemGroup>
 </Project>

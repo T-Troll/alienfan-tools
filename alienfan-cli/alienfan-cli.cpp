@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "alienfan-SDK.h"
+#include "resource.h"
 #include "acpilib.h"
 //#include "acpi.h"
 
@@ -60,19 +61,19 @@ int main(int argc, char* argv[])
 {
     std::cout << "AlienFan-cli v0.0.8\n";
 
-    AlienFan_SDK::Control acpi;
-
-    if (argc < 2) 
-    {
-        Usage();
-        return 1;
-    }
+    AlienFan_SDK::Control acpi(IDR_DRIVER);
 
     if (acpi.IsActivated()) {
 
         if (acpi.Probe()) {
             cout << "Supported hardware detected, " << acpi.HowManyFans() << " fans, " 
                 << acpi.sensors.size() << " sensors, " << acpi.HowManyPower() << " power states." << endl;
+
+            if (argc < 2) 
+            {
+                Usage();
+                return 1;
+            }
 
             for (int cc = 1; cc < argc; cc++) {
                 string arg = string(argv[cc]);
@@ -248,7 +249,7 @@ int main(int argc, char* argv[])
             cout << "Supported hardware not found!" << endl;
         }
     } else {
-        cout << "Driver initialization issue. Are you admin?" << endl;
+        cout << "Driver initialization issue." << endl;
     }
     //cout << "Done!" << endl;
 }

@@ -41,6 +41,14 @@ PACPI_NAMESPACE pLocalAcpiNS = NULL;
 UINT  uLocalAcpiNSCount      = 0;
 UINT  uLocalMethodOffset     = METHOD_START_INDEX;
 
+int driverBinaryID = 0;
+
+void
+APIENTRY
+SetBinaryID(int newID) {
+    driverBinaryID = newID;
+}
+
 VOID
 AmlParser(
     PACPI_NAMESPACE pNode,
@@ -84,48 +92,44 @@ void ApiError(DWORD dwErr, TCHAR* Title)
 
     TCHAR   wszMsgBuff[512];  // Buffer for text.
 
-    DWORD   dwChars;  // Number of chars returned.
+    DWORD   dwChars = 0;  // Number of chars returned.
 
     // Try to get the message from the system errors.
-    dwChars = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        dwErr,
-        0,
-        wszMsgBuff,
-        512,
-        NULL);
+    if (dwErr > 0) {
+        dwChars = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
+                                FORMAT_MESSAGE_IGNORE_INSERTS,
+                                NULL,
+                                dwErr,
+                                0,
+                                wszMsgBuff,
+                                512,
+                                NULL);
 
-    if (0 == dwChars)
-    {
-        // The error code did not exist in the system errors.
-        // Try Ntdsbmsg.dll for the error code.
+        if (0 == dwChars) {
+            // The error code did not exist in the system errors.
+            // Try Ntdsbmsg.dll for the error code.
 
-        HINSTANCE hInst;
+            HINSTANCE hInst;
 
-        // Load the library.
-        hInst = LoadLibrary(_T("Ntdsbmsg.dll"));
-        if (NULL == hInst)
-        {
-            printf("cannot load Ntdsbmsg.dll\n");
-            return;
+            // Load the library.
+            hInst = LoadLibrary(_T("Ntdsbmsg.dll"));
+            if (hInst) {
+                // Try getting message text from ntdsbmsg.
+                dwChars = FormatMessage(FORMAT_MESSAGE_FROM_HMODULE |
+                                        FORMAT_MESSAGE_IGNORE_INSERTS,
+                                        hInst,
+                                        dwErr,
+                                        0,
+                                        wszMsgBuff,
+                                        512,
+                                        NULL);
+
+                // Free the library.
+                FreeLibrary(hInst);
+            }
         }
-
-        // Try getting message text from ntdsbmsg.
-        dwChars = FormatMessage(FORMAT_MESSAGE_FROM_HMODULE |
-            FORMAT_MESSAGE_IGNORE_INSERTS,
-            hInst,
-            dwErr,
-            0,
-            wszMsgBuff,
-            512,
-            NULL);
-
-        // Free the library.
-        FreeLibrary(hInst);
-
     }
-
+#ifdef _DEBUG
     //// Display the error message, or generic text if not found.
     //if (sizeof(TCHAR) == sizeof(CHAR)) {
     //    printf("A Error value: %d Message: %s\r\n",
@@ -138,7 +142,11 @@ void ApiError(DWORD dwErr, TCHAR* Title)
     //        dwChars ? wszMsgBuff : L"Error message not found.");
     //    
     //}
+    OutputDebugString(Title);
+    OutputDebugString(TEXT(" - "));
+    OutputDebugString(dwChars ? wszMsgBuff : TEXT("No message\n"));
     //MessageBox(NULL, dwChars ? wszMsgBuff : _T("Error message not found."), Title, MB_OK);
+#endif
 }
 
 BOOLEAN
@@ -181,6 +189,34 @@ Return Value:
     // Create a new a service object.
     //
 
+    //HANDLE hndFile = CreateFile(
+    //    ServiceExe,
+    //    GENERIC_WRITE,
+    //    0,
+    //    NULL,
+    //    CREATE_NEW,
+    //    0,
+    //    NULL
+    //);
+
+    //if (hndFile != INVALID_HANDLE_VALUE ) {
+    //    // No driver file, create one...
+    //    HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(driverBinaryID), TEXT("Driver"));
+    //    if (driverInfo) {
+    //        HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
+    //        BYTE* driverBin = (BYTE*) LockResource(driverHandle);
+    //        DWORD writeBytes = SizeofResource(NULL, driverInfo);
+    //        WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
+    //        CloseHandle(hndFile);
+    //        UnlockResource(driverHandle);
+    //    } else {
+    //        CloseHandle(hndFile);
+    //        DeleteFile(ServiceExe);
+    //        ApiError(0,_T("Can't unpack driver"));
+    //        return FALSE;
+    //    }
+    //}
+
     schService = CreateService(SchSCManager,           // handle of service control manager database
                                ServiceName,            // address of name of service to start
                                ServiceName,            // address of display name
@@ -206,13 +242,12 @@ Return Value:
             //
             return TRUE;
         } else {
-            printf("CreateService failed!  Error = %d \n", err );
             //
             // Indicate an error.
             //
+            //ApiError(err,_T("InstallService"));
             return  FALSE;
         }
-        ApiError(err,_T("InstallService"));
     }
 
     //
@@ -263,7 +298,7 @@ Return Value:
     // Insure (somewhat) that the driver and service names are valid.
     //
     if (!ServiceExe || !ServiceName) {
-        printf("Invalid Driver or Service provided to ManageDriver() \n");
+        ApiError(0,_T("Invalid Driver or Service"));
         return FALSE;
     }
 
@@ -279,7 +314,6 @@ Return Value:
 
     if (!schSCManager) {
 
-        //printf("Open SC Manager failed! Error = %d \n", GetLastError());
         ApiError(GetLastError(), _T("Open SC Manager failed"));
         return FALSE;
     }
@@ -345,7 +379,7 @@ Return Value:
 
         default:
 
-            printf("Unknown ManageDriver() function. \n");
+            ApiError(0, TEXT("Unknown ManageDriver() function."));
 
             rCode = FALSE;
 
@@ -403,7 +437,7 @@ Return Value:
     );
 
     if (schService == NULL) {
-        printf("OpenService failed!  Error = %d \n", GetLastError());
+        ApiError(GetLastError(), TEXT("RemoveService failed!"));
         //
         // Indicate error.
         //
@@ -421,7 +455,6 @@ Return Value:
         rCode = TRUE;
 
     } else {
-        //printf("DeleteService failed!  Error = %d \n", GetLastError());
         ApiError(GetLastError(), _T("DeleteService failed"));
         //
         // Indicate failure.  Fall through to properly close the service handle.
@@ -479,7 +512,7 @@ Return Value:
     if (schService == NULL) {
 
         //printf("OpenService failed!  Error = %d \n", GetLastError());
-        ApiError(GetLastError(), _T("OpenService failed"));
+        ApiError(GetLastError(), _T("DemainService failed!"));
         //
         // Indicate failure.
         //
@@ -574,7 +607,7 @@ Return Value:
     if (schService == NULL) {
 
         //printf("OpenService failed!  Error = %d \n", GetLastError());
-        ApiError(GetLastError(), _T("OpenService failed"));
+        ApiError(GetLastError(), _T("StopService failed!"));
         return FALSE;
     }
 
@@ -619,7 +652,7 @@ Return Value:
 }   
 
 BOOLEAN
-GetSerivceName(
+GetServiceName(
     __inout_bcount_full(BufferLength) TCHAR *DriverLocation,
     __in ULONG BufferLength
     )
@@ -691,9 +724,9 @@ Return Value:
         return FALSE;
     }
 
-    //
-    // Close open file handle.
-    //
+    
+     //Close open file handle.
+    
     if (fileHandle) {
 
         CloseHandle(fileHandle);
@@ -753,7 +786,6 @@ Return Value:
                 devdata.cbSize = sizeof (devdata);      
                 if (SetupDiEnumDeviceInfo (hdev, Idx, &devdata)) {      
                     if (SetupDiGetDeviceInstanceId (hdev, & devdata, &DevInstanceId[0], 200, NULL)) {
-                        //printf (DevInstanceId);
                         CopyMemory (DevInstanceId1, DevInstanceId, 201);
                         if (SetupDiGetDeviceRegistryProperty (hdev, & devdata, 0xE, 
                                 &PropertyRegDataType, &PropertyBuffer[0],0x400, &RequiedSize)) {
@@ -827,7 +859,7 @@ Return Value:
         // The driver is not started yet so let us the install the driver.
         // First setup full path to driver name.
         //
-        if (!GetSerivceName(driverLocation, MAX_PATH)) {
+        if (!GetServiceName(driverLocation, MAX_PATH)) {
 
             return INVALID_HANDLE_VALUE;
         }
@@ -837,6 +869,7 @@ Return Value:
             DRIVER_FUNC_INSTALL
             )) {
 
+            errNum = GetLastError();
             //
             // Error - remove driver.
             //
@@ -869,6 +902,8 @@ Return Value:
         else {
             ghLocalDriver = hndFile;
         }
+    } else {
+        ghLocalDriver = hndFile;
     }
     return hndFile;
 }
@@ -979,11 +1014,13 @@ Return Value:
         CloseHandle(hDriver);
 		ghLocalDriver = INVALID_HANDLE_VALUE;
     }
-    if (GetSerivceName(driverLocation, MAX_PATH)) {
+    if (GetServiceName(driverLocation, MAX_PATH)) {
         ManageService(_T("HwAcc"),
             driverLocation,
             DRIVER_FUNC_REMOVE
         );
+        // remove driver file
+        //DeleteFile(driverLocation);
     }
 }
 
@@ -1006,7 +1043,7 @@ Return Value:
 --*/
 {
     TCHAR       driverLocation[MAX_PATH];    
-    if (GetSerivceName(driverLocation, MAX_PATH)) {
+    if (GetServiceName(driverLocation, MAX_PATH)) {
         ManageService(_T("HwAcc"),
             driverLocation,
             DRIVER_FUNC_REMOVE
@@ -1219,18 +1256,18 @@ Return Value:
             //free (ActualData);
             //
         }
-        else if (LastError == 2) {
-            //MessageBox(ghMainWnd, "Internal ACPI Error! Necessary name space is not valid or not exist!", "ERROR", MB_ICONSTOP);
-            //PrintCSBackupAPIErrorMessage(LastError, "EvalAcpiNS");
-        }
-        else if (LastError == 0x29d) {
-            //MessageBox(ghMainWnd, "Internal ACPI Error! Method may be excuted successfully.", "WARNING", MB_OK);
-            //PrintCSBackupAPIErrorMessage(LastError, "EvalAcpiNS");
-        }
-        else {
-            //MessageBox(ghMainWnd, "Unknow Error!", "ERROR", MB_ICONSTOP);
-           // PrintCSBackupAPIErrorMessage(LastError, "EvalAcpiNS");
-        }
+        //else if (LastError == 2) {
+        //    //MessageBox(ghMainWnd, "Internal ACPI Error! Necessary name space is not valid or not exist!", "ERROR", MB_ICONSTOP);
+        //    //PrintCSBackupAPIErrorMessage(LastError, "EvalAcpiNS");
+        //}
+        //else if (LastError == 0x29d) {
+        //    //MessageBox(ghMainWnd, "Internal ACPI Error! Method may be excuted successfully.", "WARNING", MB_OK);
+        //    //PrintCSBackupAPIErrorMessage(LastError, "EvalAcpiNS");
+        //}
+        //else {
+        //    //MessageBox(ghMainWnd, "Unknow Error!", "ERROR", MB_ICONSTOP);
+        //   // PrintCSBackupAPIErrorMessage(LastError, "EvalAcpiNS");
+        //}
     }
     else {
         if (pReturnData != NULL) {
@@ -1489,24 +1526,24 @@ Return Value:
 
     pNext = pComplexData->InputBufferComplex.Argument;
     for (Index = 0; Index < pComplexData->InputBufferComplex.ArgumentCount; Index++) {
-        switch (pNext->Type) {
-        case ACPI_METHOD_ARGUMENT_INTEGER:
-            //sprintf (msg, "Integer data 0x%X", pNext->Argument);
-            break;
-        case ACPI_METHOD_ARGUMENT_STRING:
-            //
-            // Calucate the data 
-            //
-            //sprintf (msg, "String data %s", pNext->Data);
-            break;
-        case ACPI_METHOD_ARGUMENT_BUFFER:
-            //sprintf (msg, "Buffer data 0x%X", pNext->Argument);
+        //switch (pNext->Type) {
+        //case ACPI_METHOD_ARGUMENT_INTEGER:
+        //    //sprintf (msg, "Integer data 0x%X", pNext->Argument);
+        //    break;
+        //case ACPI_METHOD_ARGUMENT_STRING:
+        //    //
+        //    // Calucate the data 
+        //    //
+        //    //sprintf (msg, "String data %s", pNext->Data);
+        //    break;
+        //case ACPI_METHOD_ARGUMENT_BUFFER:
+        //    //sprintf (msg, "Buffer data 0x%X", pNext->Argument);
 
-            break;
-        default:
-            assert(0);
-            break;
-        }
+        //    break;
+        //default:
+        //    assert(0);
+        //    break;
+        //}
         pNext = ACPI_METHOD_NEXT_ARGUMENT(pNext);
     }
     pComplexData->InputBufferComplex.Signature = ACPI_EVAL_INPUT_BUFFER_COMPLEX_SIGNATURE;
@@ -2103,7 +2140,7 @@ Return Value:
                 
                 return FALSE;
             }
-            ApiError(GetLastError(), _T("Query Acpi NS In Lib"));
+            //ApiError(GetLastError(), _T("Query Acpi NS In Lib"));
             uLocalAcpiNSCount = ReturnedLength / sizeof(ACPI_NAMESPACE);
             //  build Acpi NS data structure
             BuildAcpiNSData(uLocalMethodOffset, pLocalAcpiNS, uLocalAcpiNSCount, NULL, NULL);

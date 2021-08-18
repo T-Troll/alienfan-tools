@@ -178,7 +178,6 @@
     <ClInclude Include="AmlParser.h" />
     <ClInclude Include="mdmap.h" />
     <ClInclude Include="namestack.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="service.h" />
   </ItemGroup>
   <ItemGroup>
@@ -196,9 +195,6 @@
     <ProjectReference Include="..\HwAcc\HwAcc.vcxproj">
       <Project>{5d74f1ca-7a53-4cbc-adc4-e484814c4c6a}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="AcpiLib.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

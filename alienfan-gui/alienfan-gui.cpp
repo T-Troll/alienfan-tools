@@ -43,6 +43,31 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    FanCurve(HWND, UINT, WPARAM, LPARAM);
 
+//bool UnpackDriver() {
+//    // Unpack driver file, if not exist...
+//    HANDLE hndFile = CreateFile(
+//        TEXT(".\\HwAcc2.sys"),
+//        GENERIC_WRITE,
+//        0,
+//        NULL,
+//        CREATE_NEW,
+//        0,
+//        NULL
+//    );
+//
+//    if (hndFile != INVALID_HANDLE_VALUE ) {
+//        // No driver file, create one...
+//        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), "Driver");
+//        HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
+//        BYTE* driverBin = (BYTE *) LockResource(driverHandle);
+//        DWORD writeBytes = SizeofResource(NULL, driverInfo);
+//        WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
+//        CloseHandle(hndFile);
+//        UnlockResource(driverHandle);
+//    }
+//    return true;
+//}
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
                      _In_ LPWSTR    lpCmdLine,
@@ -55,7 +80,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     conf = new ConfigHelper();
     conf->Load();
-    acpi = new AlienFan_SDK::Control();
+
+    acpi = new AlienFan_SDK::Control(IDR_DRIVER);
 
     if (acpi->Probe()) {
 

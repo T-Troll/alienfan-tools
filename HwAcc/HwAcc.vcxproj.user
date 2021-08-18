@@ -2,7 +2,7 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <SignMode>TestSign</SignMode>
-    <TestCertificate>CN="WDKTestCert Roman,132726192167621326" | 51718CE443ACE9580B78BED479178B53BFC04BEF</TestCertificate>
+    <TestCertificate>CN="WDKTestCert Roman,132737521555569899" | 2979393DD9A523D3985140E698B2B79AA3A6768C</TestCertificate>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup>

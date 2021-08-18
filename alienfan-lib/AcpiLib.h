@@ -49,6 +49,11 @@ extern "C" {
 #define ACPI_LIB_FUNCTION 
 
 ACPI_LIB_FUNCTION
+void
+APIENTRY
+SetBinaryID(int);
+
+ACPI_LIB_FUNCTION
 VOID
 APIENTRY
 CloseDll();

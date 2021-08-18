@@ -63,6 +63,5 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\x64\Release\HwAcc.sys" />
-    <None Include="..\x64\Release\HwAcc\HwAcc.sys" />
   </ItemGroup>
 </Project>
