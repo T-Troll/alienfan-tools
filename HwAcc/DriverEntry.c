@@ -27,20 +27,53 @@ Environment:
 #define NT_DEVICE_NAME      L"\\Device\\HWACC0"
 #define DOS_DEVICE_NAME     L"\\DosDevices\\HwAcc"
 
+DRIVER_INITIALIZE DriverInit;
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_DISPATCH CreateClose;
 DRIVER_DISPATCH DeviceControl;
 DRIVER_UNLOAD UnloadDriver;
 
 #ifdef ALLOC_PRAGMA
+#ifdef KERNEL_HACK
+#pragma alloc_text( INIT, DriverInit)
+#else
 #pragma alloc_text( INIT, DriverEntry)
+#endif
 #pragma alloc_text( PAGE, CreateClose)
 #pragma alloc_text( PAGE, DeviceControl)
 #pragma alloc_text( PAGE, UnloadDriver)
 #pragma alloc_text( PAGE, OpenAcpiDevice)
-//#pragma alloc_text( PAGE, HwAccCreateClose)
 #endif // ALLOC_PRAGMA
 
+
+#ifdef KERNEL_HACK
+NTKERNELAPI
+NTSTATUS
+IoCreateDriver(
+	_In_ PUNICODE_STRING DriverName, OPTIONAL
+	_In_ PDRIVER_INITIALIZE InitializationFunction
+);
+
+NTSTATUS 
+DriverInit(
+	_In_  struct _DRIVER_OBJECT* DriverObject,
+	_In_  PUNICODE_STRING RegistryPath
+) {
+	NTSTATUS        status;
+	UNICODE_STRING  drvName;
+
+	/* This parameters are invalid due to nonstandard way of loading and should not be used. */
+	UNREFERENCED_PARAMETER(DriverObject);
+	UNREFERENCED_PARAMETER(RegistryPath);
+
+	DebugPrint(("HWACC: Init, Calling entry point..."));
+
+	RtlInitUnicodeString(&drvName, NT_DEVICE_NAME);
+	status = IoCreateDriver(&drvName, &DriverEntry);
+
+	return status;
+}
+#endif
 
 NTSTATUS
 DriverEntry(
@@ -76,6 +109,7 @@ Return Value:
 
 
 	RtlInitUnicodeString(&ntUnicodeString, NT_DEVICE_NAME);
+	RtlInitUnicodeString(&ntWin32NameString, DOS_DEVICE_NAME);
 
 	//DbgBreakPoint ();
 	DebugPrint(("HWACC: Entry Point"));
@@ -91,27 +125,12 @@ Return Value:
 		FALSE,                          // Not an exclusive device
 		&deviceObject);                // Returned ptr to Device Object
 
-	if (!NT_SUCCESS(ntStatus))
+	if (!NT_SUCCESS(ntStatus) || !deviceObject)
 	{
 		DebugPrint(("HWACC: Couldn't create the device object\n"));
 		return ntStatus;
 	}
 	DebugPrint(("HWACC: Create the device object successfully\n"));
-	//
-	// Initialize the driver object with this driver's entry points.
-	//
-
-	DriverObject->MajorFunction[IRP_MJ_CREATE] = CreateClose;
-	DriverObject->MajorFunction[IRP_MJ_CLOSE] = CreateClose;
-	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = DeviceControl;
-	DriverObject->DriverUnload = UnloadDriver;
-
-	//
-	// Initialize a Unicode String containing the Win32 name
-	// for our device.
-	//
-
-	RtlInitUnicodeString(&ntWin32NameString, DOS_DEVICE_NAME);
 
 	//
 	// Create a symbolic link between our device name  and the Win32 name
@@ -128,6 +147,28 @@ Return Value:
 		DebugPrint(("HWACC: Couldn't create symbolic link\n"));
 		IoDeleteDevice(deviceObject);
 	}
+
+	//
+	// Initialize the driver object with this driver's entry points.
+	//
+
+	DriverObject->MajorFunction[IRP_MJ_CREATE] = CreateClose;
+	DriverObject->MajorFunction[IRP_MJ_CLOSE] = CreateClose;
+	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = DeviceControl;
+#ifdef KERNEL_HACK
+	DriverObject->DriverUnload = NULL;
+	deviceObject->Flags |= DO_BUFFERED_IO;
+	deviceObject->Flags &= ~DO_DEVICE_INITIALIZING;
+#else
+	DriverObject->DriverUnload = UnloadDriver;
+#endif
+
+	//
+	// Initialize a Unicode String containing the Win32 name
+	// for our device.
+	//
+
+	RtlInitUnicodeString(&ntWin32NameString, DOS_DEVICE_NAME);
 
 	DebugPrint(("HWACC: Init done\n"));
 
@@ -319,30 +360,47 @@ Return Value:
 	case IOCTL_GPD_OPEN_ACPI:
 		//pDevObj = IoGetLowerDeviceObject (DeviceObject);
 		Status = OpenAcpiDevice(pLDI, pIrp);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_OPEN_ACPI error!\n"));
 		break;
 	case IOCTL_GPD_ENUM_ACPI:
 		Status = BuildUserAcpiObjects(pLDI, pIrp, pIrpStack);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_ENUM_ACPI error!\n"));
 		break;
 	case IOCTL_GPD_READ_ACPI_MEMORY:
 		Status = ReadAcpiMemory(pLDI, pIrp, pIrpStack);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_READ_ACPI_MEMORY error!\n"));
 		break;
 	case IOCTL_GPD_EVAL_ACPI_WITHOUT_PARAMETER:
 		Status = EvalAcpiWithoutInput(pLDI, pIrp, pIrpStack);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_EVAL_ACPI_WITHOUT_PARAMETER error!\n"));
 		break;
 	case IOCTL_GPD_EVAL_ACPI_WITH_PARAMETER:
 		Status = EvalAcpiWithInput(pLDI, pIrp, pIrpStack);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_EVAL_ACPI_WITH_PARAMETER error!\n"));
 		break;
 	case IOCTL_GPD_LOAD_AML:
 		Status = SetupAmlForNotify(pLDI, pIrp, pIrpStack);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_LOAD_AML error!\n"));
 		break;
 	case IOCTL_GPD_NOTIFY_DEVICE:
 		Status = SetupAmlForNotify(pLDI, pIrp, pIrpStack);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_NOTIFY_DEVICE error!\n"));
 		break;
 	case IOCTL_GPD_UNLOAD_AML:
 		Status = RemoveAmlForNotify(pLDI, pIrp, pIrpStack);
+		if (!NT_SUCCESS(Status))
+			DebugPrint(("HWACC: IOCTL_GPD_UNLOAD_AML error!\n"));
 		break;
 	default:
 		Status = STATUS_INVALID_PARAMETER;
+		DebugPrint(("HWACC: IOCTL invalid parameter!\n"));
 	}
 
 	pIrp->IoStatus.Status = Status;

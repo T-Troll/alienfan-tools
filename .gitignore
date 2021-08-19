@@ -31,7 +31,7 @@
 *.out
 *.app
 /.vs
-/alienfan-cli/.vs/alienfan-tools/v16
+/alienfan-cli/
 /alienfan-cli/Debug
 /alienfan-cli/x64
 /HwAcc/Debug
