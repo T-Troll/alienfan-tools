@@ -80,13 +80,13 @@ Avaliable commands:
 - `power=<value>` - Set PL1 to this predefined level. Possible levels autodetected from ACPI, see message at app start 
 - `getfans` - Show current fan RPMs boost
 - `setfans=<fan1>,<fan2>...` - Set fans RPM boost level (0..100 - in percent). Fan1 is for CPU fan, Fan2 for GPU one. Number of arguments should be the same as number of fans application detect
-- `direct=<id>,<subid>[,val,val]` - Issue direct Alienware interface command (see below)
+- `direct=<id>,<subid>[,val,val]` - Issue direct Alienware interface command (see below)  
 NB: Setting Power level to non-zero value disables manual fan control!
 
 `direct` command is for testing various functions of the main Alienware ACPI function.  
 If default functions doesn't works, you can check and try to find you system subset.
 
-For example: issuing command `direct=20,5,50` return fam RPM for fan #1 on laptop, but for desktop the command should be different.
+For example: issuing command `direct=20,5,50` return fan RPM for fan #1 on laptop, but for desktop the command should be different.
 
 You can check possible commands and values yourself, opening you system ACPI dump file and searching for `Method(WMAX` function.  
 It accept 3 parameters - first is not used, second is a command, and the third is byte array of sumcommand and 2 value bytes.  
