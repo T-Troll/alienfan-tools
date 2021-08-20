@@ -74,5 +74,6 @@ namespace AlienFan_SDK {
 		vector<ALIENFAN_SEN_INFO> sensors;
 		vector<USHORT> fans;
 		vector<USHORT> powers;
+		bool wrongEnvironment = false;
 	};
 }

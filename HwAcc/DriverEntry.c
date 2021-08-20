@@ -20,7 +20,7 @@ Environment:
 --*/
 
 #include <ntddk.h>          // various NT definitions
-#include <string.h>
+#include <stdio.h>
 #include "def.h"
 #include "access.h"
 
@@ -177,8 +177,8 @@ Return Value:
 
 NTSTATUS
 CreateClose(
-	__in PDEVICE_OBJECT DeviceObject,
-	__in PIRP Irp
+	PDEVICE_OBJECT DeviceObject, //__in PDEVICE_OBJECT DeviceObject,
+	PIRP Irp //__in PIRP Irp
 )
 /*++
 
@@ -303,8 +303,8 @@ Return Value:
 
 NTSTATUS
 DeviceControl(
-	__in PDEVICE_OBJECT DeviceObject,
-	__in PIRP pIrp
+	PDEVICE_OBJECT DeviceObject, // was _in
+	PIRP pIrp
 )
 
 /*++
@@ -360,48 +360,36 @@ Return Value:
 	case IOCTL_GPD_OPEN_ACPI:
 		//pDevObj = IoGetLowerDeviceObject (DeviceObject);
 		Status = OpenAcpiDevice(pLDI, pIrp);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_OPEN_ACPI error!\n"));
 		break;
 	case IOCTL_GPD_ENUM_ACPI:
 		Status = BuildUserAcpiObjects(pLDI, pIrp, pIrpStack);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_ENUM_ACPI error!\n"));
 		break;
 	case IOCTL_GPD_READ_ACPI_MEMORY:
 		Status = ReadAcpiMemory(pLDI, pIrp, pIrpStack);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_READ_ACPI_MEMORY error!\n"));
 		break;
 	case IOCTL_GPD_EVAL_ACPI_WITHOUT_PARAMETER:
 		Status = EvalAcpiWithoutInput(pLDI, pIrp, pIrpStack);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_EVAL_ACPI_WITHOUT_PARAMETER error!\n"));
 		break;
 	case IOCTL_GPD_EVAL_ACPI_WITH_PARAMETER:
 		Status = EvalAcpiWithInput(pLDI, pIrp, pIrpStack);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_EVAL_ACPI_WITH_PARAMETER error!\n"));
 		break;
 	case IOCTL_GPD_LOAD_AML:
 		Status = SetupAmlForNotify(pLDI, pIrp, pIrpStack);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_LOAD_AML error!\n"));
 		break;
 	case IOCTL_GPD_NOTIFY_DEVICE:
 		Status = SetupAmlForNotify(pLDI, pIrp, pIrpStack);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_NOTIFY_DEVICE error!\n"));
 		break;
 	case IOCTL_GPD_UNLOAD_AML:
 		Status = RemoveAmlForNotify(pLDI, pIrp, pIrpStack);
-		if (!NT_SUCCESS(Status))
-			DebugPrint(("HWACC: IOCTL_GPD_UNLOAD_AML error!\n"));
 		break;
 	default:
 		Status = STATUS_INVALID_PARAMETER;
-		DebugPrint(("HWACC: IOCTL invalid parameter!\n"));
 	}
+
+#ifdef DBG
+	if (!NT_SUCCESS(Status))
+		DebugPrint(("HWACC: Control operation failed (more data?)\n"));
+#endif
 
 	pIrp->IoStatus.Status = Status;
 

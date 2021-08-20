@@ -30,7 +30,7 @@ Environment:
 #define EnableInterrupt() __asm sti
 #endif
 
-#if DBG
+#ifdef _DEBUG
 #define DebugPrint(_x_) \
                DbgPrint _x_;
 

@@ -111,7 +111,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         delete mon;
 
     } else {
-        MessageBox(NULL, "No Alienware hardware detected, exiting!\nAre you launch app as administrator?", "Fatal error",
+        if (acpi->wrongEnvironment)
+            if (MessageBox(NULL, "Wrong envoronment settings. Do you want to set it?", "Driver installation error",
+                           MB_YESNO | MB_ICONWARNING) == IDYES) {
+                MessageBox(NULL, "You should disabe Secure Boot in BIOS before this operation, and restart you system after application exit!\nUse 'bcdedit /set testsigning off' from command line to revert.", "Warning!",
+                           MB_OK | MB_ICONHAND);
+                string shellcom = "/set testsigning on";
+                ShellExecute(NULL, "runas", "bcdedit", shellcom.c_str(), NULL, SW_HIDE);
+            }
+        else
+            MessageBox(NULL, "No Alienware hardware detected or access denied.", "Fatal error",
                    MB_OK | MB_ICONSTOP);
         acpi->UnloadService();
     }
@@ -437,6 +446,7 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 case CBN_SELCHANGE: {
                     conf->lastPowerStage = pid;
                     acpi->SetPower(pid);
+                    conf->Save();
                 } break;
                 }
             } break;
@@ -464,11 +474,13 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                     shellcomm = "/delete /F /TN \"AlienFan-GUI\"";
                     ShellExecute(NULL, "runas", "schtasks.exe", shellcomm.c_str(), NULL, SW_HIDE);
                 }
+                conf->Save();
             } break;
             case IDM_SETTINGS_STARTMINIMIZED:
             {
                 conf->startMinimized = !conf->startMinimized;
                 CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
+                conf->Save();
             } break;
             case IDC_BUT_RESET:
             {
@@ -600,6 +612,7 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         DestroyWindow(hDlg);
         break;
     case WM_DESTROY:
+        conf->Save();
         PostQuitMessage(0);
         break;
     }
@@ -752,6 +765,7 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             cFan->points.front().temp = 0;
             cFan->points.back().temp = 100;
             DrawFan(GetParent(hDlg));
+            conf->Save();
         }
     } break;
     case WM_RBUTTONUP: {
@@ -769,6 +783,7 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                     break;
                 }
             DrawFan(GetParent(hDlg));
+            conf->Save();
         }
     } break;
     //case WM_SETCURSOR:

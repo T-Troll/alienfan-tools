@@ -21,6 +21,12 @@ Environment:
 
 #pragma comment(lib,"setupapi.lib")
 
+#ifdef _DEBUG
+#define ApiError(_x_,_y_) PApiError(_x_,_y_);
+#else
+#define ApiError(_x_,_y_)  
+#endif
+
 typedef ACPI_NAMESPACE ACPI_NS;
 ACPI_NAMESPACE* GetAcpiNsFromNsAddr(PVOID pVoid);
 
@@ -87,7 +93,7 @@ VOID CloseDll()
     CloseAcpiService(ghLocalDriver);
 }
 
-void ApiError(DWORD dwErr, TCHAR* Title)
+void PApiError(DWORD dwErr, TCHAR* Title)
 {
 
     TCHAR   wszMsgBuff[512];  // Buffer for text.
@@ -189,34 +195,6 @@ Return Value:
     // Create a new a service object.
     //
 
-    //HANDLE hndFile = CreateFile(
-    //    ServiceExe,
-    //    GENERIC_WRITE,
-    //    0,
-    //    NULL,
-    //    CREATE_NEW,
-    //    0,
-    //    NULL
-    //);
-
-    //if (hndFile != INVALID_HANDLE_VALUE ) {
-    //    // No driver file, create one...
-    //    HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(driverBinaryID), TEXT("Driver"));
-    //    if (driverInfo) {
-    //        HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
-    //        BYTE* driverBin = (BYTE*) LockResource(driverHandle);
-    //        DWORD writeBytes = SizeofResource(NULL, driverInfo);
-    //        WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
-    //        CloseHandle(hndFile);
-    //        UnlockResource(driverHandle);
-    //    } else {
-    //        CloseHandle(hndFile);
-    //        DeleteFile(ServiceExe);
-    //        ApiError(0,_T("Can't unpack driver"));
-    //        return FALSE;
-    //    }
-    //}
-
     schService = CreateService(SchSCManager,           // handle of service control manager database
                                ServiceName,            // address of name of service to start
                                ServiceName,            // address of display name
@@ -239,13 +217,14 @@ Return Value:
         if (err == ERROR_DUPLICATE_SERVICE_NAME || err == ERROR_SERVICE_EXISTS) {
             //
             // Ignore this error.
+            ApiError(err,_T("Service already installed"));
             //
             return TRUE;
         } else {
             //
             // Indicate an error.
             //
-            //ApiError(err,_T("InstallService"));
+            ApiError(err,_T("InstallService"));
             return  FALSE;
         }
     }
@@ -346,6 +325,7 @@ Return Value:
                 //
                 // Indicate an error.
                 //
+                ApiError(GetLastError(), _T("DemandService failed"));
                 rCode = FALSE;
             }
             break;
@@ -708,6 +688,8 @@ Return Value:
         return FALSE;
     }
 
+    StringCbPrintf (DriverLocation,BufferLength, file);
+
     // test file is existing
     if ((fileHandle = CreateFile(file,
         GENERIC_READ,
@@ -736,16 +718,15 @@ Return Value:
     //
     // Setup path name to driver file.
     //
-    if (FAILED(StringCbCat(driver, MAX_PATH, _T("\\HwAcc.sys")))) {
-        return FALSE;
-    }
+    //if (FAILED(StringCbCat(driver, MAX_PATH, _T("\\HwAcc.sys")))) {
+    //    return FALSE;
+    //}
 
     /*if (GetLastError () == 0) {
         
         StringCbCat (DriverLocation, MAX_PATH, _T("\\HwAcc.sys"));        
     }*/    
 
-    StringCbPrintf (DriverLocation,BufferLength, file);
     return TRUE;
 }
 
@@ -860,8 +841,40 @@ Return Value:
         // First setup full path to driver name.
         //
         if (!GetServiceName(driverLocation, MAX_PATH)) {
+            ApiError(0, _T("Driver file not found!"));
+#ifndef STEADY_FILE
+            HANDLE hndFile = CreateFile(
+                driverLocation,
+                GENERIC_WRITE,
+                0,
+                NULL,
+                CREATE_NEW,
+                0,
+                NULL
+            );
 
+            if (hndFile != INVALID_HANDLE_VALUE && driverBinaryID ) {
+                // No driver file, create one...
+                HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(driverBinaryID), TEXT("Driver"));
+                if (driverInfo) {
+                    HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
+                    BYTE* driverBin = (BYTE*) LockResource(driverHandle);
+                    DWORD writeBytes = SizeofResource(NULL, driverInfo);
+                    WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
+                    CloseHandle(hndFile);
+                    ApiError(0,_T("Driver unpacked"));
+                    UnlockResource(driverHandle);
+                } else {
+                    CloseHandle(hndFile);
+                    DeleteFile(driverLocation);
+                    ApiError(0,_T("Can't unpack driver"));
+                    return INVALID_HANDLE_VALUE;
+                }
+            } else
+                ApiError(0,_T("Driver file already present"));
+#else
             return INVALID_HANDLE_VALUE;
+#endif
         }
 
         if (!ManageService(_T("HwAcc"),
@@ -870,6 +883,7 @@ Return Value:
             )) {
 
             errNum = GetLastError();
+            // TODO: check 577!
             //
             // Error - remove driver.
             //
@@ -877,7 +891,11 @@ Return Value:
                 driverLocation,
                 DRIVER_FUNC_REMOVE
                 );
-            return INVALID_HANDLE_VALUE;
+            ApiError(GetLastError(), _T("Can't manage service!"));
+            if (errNum != ERROR_INVALID_IMAGE_HASH)
+                return INVALID_HANDLE_VALUE;
+            else
+                return NULL;
         }
 
         hndFile = CreateFile(
@@ -891,11 +909,13 @@ Return Value:
 
         if ( hndFile == INVALID_HANDLE_VALUE ){
             //MessageBox (NULL, "Failed to load HwAcc Driver", "Error", MB_ICONSTOP);
+            ApiError(GetLastError(), _T("Can't access driver!"));
             return INVALID_HANDLE_VALUE ;
         }
 
         if (!OpenAcpiDevice(hndFile))
         {
+            ApiError(GetLastError(), _T("Can't open ACPI device!"));
             CloseHandle(hndFile);
             hndFile = INVALID_HANDLE_VALUE;
         }
@@ -1014,14 +1034,18 @@ Return Value:
         CloseHandle(hDriver);
 		ghLocalDriver = INVALID_HANDLE_VALUE;
     }
+#ifndef KERNEL_HACK
     if (GetServiceName(driverLocation, MAX_PATH)) {
         ManageService(_T("HwAcc"),
             driverLocation,
             DRIVER_FUNC_REMOVE
         );
+#ifndef STEADY_FILE
         // remove driver file
-        //DeleteFile(driverLocation);
+        DeleteFile(driverLocation);
+#endif
     }
+#endif
 }
 
 
@@ -1225,7 +1249,7 @@ Return Value:
 
     if (!IoctlResult) {
         LastError = GetLastError();
-        if (LastError == 0xEA) {
+        if (LastError == ERROR_MORE_DATA) {
             ActualData = (PACPI_EVAL_OUTPUT_BUFFER)malloc(DataNeeded.Length);
             if (puLength != NULL) {
                 *puLength = DataNeeded.Length;

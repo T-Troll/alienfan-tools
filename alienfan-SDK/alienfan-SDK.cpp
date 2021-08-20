@@ -12,7 +12,16 @@ namespace AlienFan_SDK {
 
 	Control::Control(int driverID) {
 		SetBinaryID(driverID);
-		activated = (acc = OpenAcpiService()) && QueryAcpiNSInLib();
+		acc = OpenAcpiService();
+		switch ((int)acc) {
+		case -1:
+			return;
+		case 0:
+			wrongEnvironment = true;
+			return;
+		default:
+			activated = QueryAcpiNSInLib();
+		}
 	}
 	Control::~Control() {
 		sensors.clear();
