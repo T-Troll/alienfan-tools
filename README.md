@@ -36,7 +36,7 @@ NB: You should have acpilib.dll and hwacc.sys into the same folder.
 ## `alienfan-gui` usage
 
 GUI application for fan control.  
-Then you start it, you will see 3 main windows - Temperaturs (with current reading), Fans (with checkboxes and current RPM) and Fan setting (graph).  
+Then you start it, you will see 3 main windows - Temperaturs (with current reading), Fans (with checkboxes and current RPM) and Fan curve (graph).  
 Also, "Power mode" dropdown avaliable to select global power mode.
 
 NB: Fans can only be controled if Power Mode set to "Manual"!
@@ -77,11 +77,13 @@ Avaliable commands:
 - `rpm` - Show current fan RPMs
 - `temp` - Show known temperature sensors name and value
 - `unlock` - Enable manual fan control
-- `power=<value>` - Set PL1 to this predefined level. Possible levels autodetected from ACPI, see message at app start 
+- `getpower` - Print current power mode
+- `power=<value>` - Set system-defined power level. Possible levels autodetected from ACPI, see message at app start 
 - `getfans` - Show current fan RPMs boost
 - `setfans=<fan1>,<fan2>...` - Set fans RPM boost level (0..100 - in percent). Fan1 is for CPU fan, Fan2 for GPU one. Number of arguments should be the same as number of fans application detect
 - `direct=<id>,<subid>[,val,val]` - Issue direct Alienware interface command (see below)  
-NB: Setting Power level to non-zero value disables manual fan control!
+
+NB: Setting Power level to non-zero value disables manual fan control!  
 
 `direct` command is for testing various functions of the main Alienware ACPI function.  
 If default functions doesn't works, you can check and try to find you system subset.
@@ -93,7 +95,7 @@ It accept 3 parameters - first is not used, second is a command, and the third i
 Looking inside this method can reveal commands supported for you system and what they do.  
 For example, for Aurora R7 command `direct=3,N` return fan ID for fan N or -1 (fail) if fan absent.
 
-You can share commands you find with me, and i'll add you into applications.
+You can share commands you find with me, and i'll add it into applications.
 
 ## ToDo:
 - [x] Temperature sensors reading

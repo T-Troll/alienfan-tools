@@ -4,8 +4,9 @@
 
 DWORD WINAPI CMonProc(LPVOID);
 
-MonHelper::MonHelper(HWND cDlg, ConfigHelper* config, AlienFan_SDK::Control* acp) {
+MonHelper::MonHelper(HWND cDlg, HWND fanDlg, ConfigHelper* config, AlienFan_SDK::Control* acp) {
 	dlg = cDlg;
+	fDlg = fanDlg;
 	conf = config;
 	acpi = acp;
 	stopEvent = CreateEvent(NULL, false, false, NULL);
@@ -50,9 +51,7 @@ DWORD WINAPI CMonProc(LPVOID param) {
 	boostSets.resize(src->acpi->HowManyFans());
 
 	HWND tempList = GetDlgItem(src->dlg, IDC_TEMP_LIST),
-		fanList = GetDlgItem(src->dlg, IDC_FAN_LIST),
-		rpmState = GetDlgItem(src->dlg, IDC_FAN_RPM),
-		curveBlock = GetDlgItem(src->dlg, IDC_FAN_CURVE);
+		fanList = GetDlgItem(src->dlg, IDC_FAN_LIST);
 
 	while (WaitForSingleObject(src->stopEvent, 500) == WAIT_TIMEOUT) {
 		// update values.....
@@ -81,13 +80,6 @@ DWORD WINAPI CMonProc(LPVOID param) {
 					ListView_SetItemText(fanList, i, 0, (LPSTR) name.c_str());
 				}
 				boostValues[i] = boostValue;
-				if (boostValue != lastBoostValue) {
-					lastBoostValue = boostValue;
-					if (i == src->conf->lastSelectedFan) {
-						string rpmText = "Current boost: " + to_string(boostValue);
-						Static_SetText(rpmState, rpmText.c_str());
-					}
-				}
 			}
 		}
 
@@ -117,8 +109,11 @@ DWORD WINAPI CMonProc(LPVOID param) {
 			for (int i = 0; i < src->acpi->HowManyFans(); i++)
 				if (boostSets[i] != boostValues[i]) {
 					src->acpi->SetFanValue(i, boostSets[i]);
-					if (visible && i == src->conf->lastSelectedFan )
-						SendMessage(curveBlock, WM_PAINT, 0, 0);
+					if (visible && src->fDlg && i == src->conf->lastSelectedFan) {
+						SendMessage(src->fDlg, WM_PAINT, 0, 0);
+						string rpmText = "Fan curve (boost: " + to_string(boostSets[i]) + ")";
+						SetWindowText(src->fDlg, rpmText.c_str());
+					}
 				}
 		}
 

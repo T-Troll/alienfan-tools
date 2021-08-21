@@ -29,12 +29,13 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 
 AlienFan_SDK::Control* acpi = NULL;             // ACPI control object
-ConfigHelper* conf = NULL;                      // Config...
+ConfigHelper* fan_conf = NULL;                      // Config...
 MonHelper* mon = NULL;                          // Monitoring & changer object
 
 fan_point* lastFanPoint = NULL;
 UINT newTaskBar = RegisterWindowMessage(TEXT("TaskbarCreated"));
 HWND toolTip = NULL;
+HWND fanWindow = NULL;
 
 // Forward declarations of functions included in this code module:
 //ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -43,30 +44,38 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    FanCurve(HWND, UINT, WPARAM, LPARAM);
 
-//bool UnpackDriver() {
-//    // Unpack driver file, if not exist...
-//    HANDLE hndFile = CreateFile(
-//        TEXT(".\\HwAcc2.sys"),
-//        GENERIC_WRITE,
-//        0,
-//        NULL,
-//        CREATE_NEW,
-//        0,
-//        NULL
-//    );
-//
-//    if (hndFile != INVALID_HANDLE_VALUE ) {
-//        // No driver file, create one...
-//        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), "Driver");
-//        HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
-//        BYTE* driverBin = (BYTE *) LockResource(driverHandle);
-//        DWORD writeBytes = SizeofResource(NULL, driverInfo);
-//        WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
-//        CloseHandle(hndFile);
-//        UnlockResource(driverHandle);
-//    }
-//    return true;
-//}
+string UnpackDriver() {
+    // Unpack driver file, if not exist...
+    char currentPath[MAX_PATH];
+    GetModuleFileName(NULL, currentPath, MAX_PATH);
+    string name = currentPath;
+    name.resize(name.find_last_of("\\"));
+    name+= "\\HwAcc.sys";
+    HANDLE hndFile = CreateFile(
+        name.c_str(),
+        GENERIC_WRITE,
+        0,
+        NULL,
+        CREATE_NEW,
+        0,
+        NULL
+    );
+
+    if (hndFile != INVALID_HANDLE_VALUE ) {
+        // No driver file, create one...
+        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), "Driver");
+        if (driverInfo) {
+            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
+            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
+            DWORD writeBytes = SizeofResource(NULL, driverInfo);
+            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
+            UnlockResource(driverHandle);
+        }
+        CloseHandle(hndFile);
+    } else
+        return TEXT("");
+    return name;
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -78,10 +87,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg = {0};
 
-    conf = new ConfigHelper();
-    conf->Load();
+    fan_conf = new ConfigHelper();
+    fan_conf->Load();
 
-    acpi = new AlienFan_SDK::Control(IDR_DRIVER);
+    string drvName = UnpackDriver();
+
+    acpi = new AlienFan_SDK::Control();
 
     if (acpi->Probe()) {
 
@@ -92,13 +103,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
 
         // minimize if needed
-        if (conf->startMinimized)
+        if (fan_conf->startMinimized)
             SendMessage(mDlg, WM_SIZE, SIZE_MINIMIZED, 0);
 
-        if (conf->lastPowerStage >= 0)
-            acpi->SetPower(conf->lastPowerStage);
+        if (fan_conf->lastPowerStage >= 0)
+            acpi->SetPower(fan_conf->lastPowerStage);
 
-        mon = new MonHelper(mDlg, conf, acpi);
+        mon = new MonHelper(mDlg, fanWindow, fan_conf, acpi);
 
         HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MAIN_ACC));
 
@@ -125,7 +136,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         acpi->UnloadService();
     }
     delete acpi;
-    delete conf;
+#ifndef KERNEL_HACK
+    DeleteFile(drvName.c_str());
+#endif
+
+    delete fan_conf;
 
     return (int) msg.wParam;
 }
@@ -176,7 +191,7 @@ HWND CreateToolTip(HWND hwndParent, HWND oldTip)
 }
 
 void ReloadFanView(HWND hDlg, int cID) {
-    temp_block* sen = conf->FindSensor(conf->lastSelectedSensor);
+    temp_block* sen = fan_conf->FindSensor(fan_conf->lastSelectedSensor);
     HWND list = GetDlgItem(hDlg, IDC_FAN_LIST);
     ListView_DeleteAllItems(list);
     ListView_SetExtendedListViewStyle(list, LVS_EX_CHECKBOXES /*| LVS_EX_AUTOSIZECOLUMNS*/ | LVS_EX_FULLROWSELECT);
@@ -200,10 +215,10 @@ void ReloadFanView(HWND hDlg, int cID) {
             lItem.state = LVIS_SELECTED;
         }
         ListView_InsertItem(list, &lItem);
-        if (sen && conf->FindFanBlock(sen, i)) {
-            conf->lastSelectedSensor = -1;
+        if (sen && fan_conf->FindFanBlock(sen, i)) {
+            fan_conf->lastSelectedSensor = -1;
             ListView_SetCheckState(list, i, true);
-            conf->lastSelectedSensor = sen->sensorIndex;
+            fan_conf->lastSelectedSensor = sen->sensorIndex;
         }
     }
 
@@ -221,10 +236,10 @@ void SetTooltip(HWND tt, int x, int y) {
     }
 }
 
-void DrawFan(HWND pDlg, int oper = 0, int xx=-1, int yy=-1)
+void DrawFan(int oper = 0, int xx=-1, int yy=-1)
 {
-    HWND curve = GetDlgItem(pDlg, IDC_FAN_CURVE);
-    HWND rpm = GetDlgItem(pDlg, IDC_FAN_RPM);
+    HWND curve = fanWindow;// GetDlgItem(pDlg, IDC_FAN_CURVE);
+    //HWND rpm = GetDlgItem(pDlg, IDC_FAN_RPM);
 
     if (curve) {
         RECT clirect, graphZone;
@@ -268,11 +283,11 @@ void DrawFan(HWND pDlg, int oper = 0, int xx=-1, int yy=-1)
                 LineTo(hdc, clirect.right, cy);
             }
 
-        if (conf->lastSelectedFan != -1) {
+        if (fan_conf->lastSelectedFan != -1) {
             // curve...
             temp_block* sen = NULL;
             fan_block* fan = NULL;
-            if ((sen = conf->FindSensor(conf->lastSelectedSensor)) && (fan = conf->FindFanBlock(sen, conf->lastSelectedFan))) {
+            if ((sen = fan_conf->FindSensor(fan_conf->lastSelectedSensor)) && (fan = fan_conf->FindFanBlock(sen, fan_conf->lastSelectedFan))) {
                 // draw fan curve
                 SetDCPenColor(hdc, RGB(0, 255, 0));
                 SelectObject(hdc, GetStockObject(DC_PEN));
@@ -287,14 +302,14 @@ void DrawFan(HWND pDlg, int oper = 0, int xx=-1, int yy=-1)
             }
 
             // Red dot and RPM
-            if (conf->lastSelectedSensor != -1) {
+            if (fan_conf->lastSelectedSensor != -1) {
                 SetDCPenColor(hdc, RGB(255, 0, 0));
                 SetDCBrushColor(hdc, RGB(255, 0, 0));
                 SelectObject(hdc, GetStockObject(DC_PEN));
                 SelectObject(hdc, GetStockObject(DC_BRUSH));
                 POINT mark;
-                mark.x = acpi->GetTempValue(conf->lastSelectedSensor) * (clirect.right - clirect.left) / 100 + clirect.left;
-                mark.y = (100 - acpi->GetFanValue(conf->lastSelectedFan)) * (clirect.bottom - clirect.top) / 100 + clirect.top;
+                mark.x = acpi->GetTempValue(fan_conf->lastSelectedSensor) * (clirect.right - clirect.left) / 100 + clirect.left;
+                mark.y = (100 - acpi->GetFanValue(fan_conf->lastSelectedFan)) * (clirect.bottom - clirect.top) / 100 + clirect.top;
                 Ellipse(hdc, mark.x - 3, mark.y - 3, mark.x + 3, mark.y + 3);
             }
         }
@@ -406,30 +421,40 @@ DWORD WINAPI CUpdateCheck(LPVOID lparam) {
 
 LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HWND power_list = GetDlgItem(hDlg, IDC_COMBO_POWER),
-        fan_control = GetDlgItem(hDlg, IDC_FAN_CURVE);
+    HWND power_list = GetDlgItem(hDlg, IDC_COMBO_POWER);// ,
+        //fan_control = GetDlgItem(hDlg, IDC_FAN_CURVE);
     if (message == newTaskBar) {
         // Started/restarted explorer...
-        Shell_NotifyIcon(NIM_ADD, &conf->niData);
-        CreateThread(NULL, 0, CUpdateCheck, &conf->niData, 0, NULL);
+        Shell_NotifyIcon(NIM_ADD, &fan_conf->niData);
+        CreateThread(NULL, 0, CUpdateCheck, &fan_conf->niData, 0, NULL);
         return true;
     }
 
     switch (message)
     {
-    case WM_INITDIALOG: {
-        conf->niData.hWnd = hDlg;
-        Shell_NotifyIcon(NIM_ADD, &conf->niData);
-        CreateThread(NULL, 0, CUpdateCheck, &conf->niData, 0, NULL);
+    case WM_INITDIALOG:
+    {
+        fan_conf->niData.hWnd = hDlg;
+        Shell_NotifyIcon(NIM_ADD, &fan_conf->niData);
+        CreateThread(NULL, 0, CUpdateCheck, &fan_conf->niData, 0, NULL);
 
-        ReloadPowerList(hDlg, conf->lastPowerStage);
-        ReloadTempView(hDlg, conf->lastSelectedSensor);
-        ReloadFanView(hDlg, conf->lastSelectedFan);
-        SetWindowLongPtr(fan_control, GWLP_WNDPROC, (LONG_PTR) FanCurve);
-        toolTip = CreateToolTip(fan_control, NULL);
+        ReloadPowerList(hDlg, fan_conf->lastPowerStage);
+        ReloadTempView(hDlg, fan_conf->lastSelectedSensor);
+        ReloadFanView(hDlg, fan_conf->lastSelectedFan);
 
-        CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTWITHWINDOWS, conf->startWithWindows ? MF_CHECKED : MF_UNCHECKED);
-        CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
+        // So open fan control window...
+        RECT cDlg;
+        GetWindowRect(hDlg, &cDlg);
+        int wh = cDlg.bottom - cDlg.top;// -2 * GetSystemMetrics(SM_CYBORDER);
+        fanWindow = CreateWindow("STATIC", "Fan curve", WS_CAPTION | WS_POPUP,//WS_OVERLAPPED,
+                                        cDlg.right, cDlg.top, wh, wh, 
+                                        hDlg, NULL, hInst, 0);
+        SetWindowLongPtr(fanWindow, GWLP_WNDPROC, (LONG_PTR) FanCurve);
+        toolTip = CreateToolTip(fanWindow, NULL);
+        ShowWindow(fanWindow, SW_SHOWNA);
+
+        CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTWITHWINDOWS, fan_conf->startWithWindows ? MF_CHECKED : MF_UNCHECKED);
+        CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, fan_conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
         return true; 
     } break;
     case WM_COMMAND:
@@ -444,9 +469,9 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 switch (HIWORD(wParam))
                 {
                 case CBN_SELCHANGE: {
-                    conf->lastPowerStage = pid;
+                    fan_conf->lastPowerStage = pid;
                     acpi->SetPower(pid);
-                    conf->Save();
+                    fan_conf->Save();
                 } break;
                 }
             } break;
@@ -461,12 +486,12 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case IDM_SETTINGS_STARTWITHWINDOWS:
             {
-                conf->startWithWindows = !conf->startWithWindows;
-                CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTWITHWINDOWS, conf->startWithWindows ? MF_CHECKED : MF_UNCHECKED);
-                char pathBuffer[2048];
+                fan_conf->startWithWindows = !fan_conf->startWithWindows;
+                CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTWITHWINDOWS, fan_conf->startWithWindows ? MF_CHECKED : MF_UNCHECKED);
+                char pathBuffer[MAX_PATH];
                 string shellcomm;
-                if (conf->startWithWindows) {
-                    GetModuleFileNameA(NULL, pathBuffer, 2047);
+                if (fan_conf->startWithWindows) {
+                    GetModuleFileName(NULL, pathBuffer, MAX_PATH);
                     shellcomm = "Register-ScheduledTask -TaskName \"AlienFan-GUI\" -trigger $(New-ScheduledTaskTrigger -Atlogon) -settings $(New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -ExecutionTimeLimit 0) -action $(New-ScheduledTaskAction -Execute '"
                         + string(pathBuffer) + "') -force -RunLevel Highest";
                     ShellExecute(NULL, "runas", "powershell.exe", shellcomm.c_str(), NULL, SW_HIDE);
@@ -474,24 +499,24 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                     shellcomm = "/delete /F /TN \"AlienFan-GUI\"";
                     ShellExecute(NULL, "runas", "schtasks.exe", shellcomm.c_str(), NULL, SW_HIDE);
                 }
-                conf->Save();
+                fan_conf->Save();
             } break;
             case IDM_SETTINGS_STARTMINIMIZED:
             {
-                conf->startMinimized = !conf->startMinimized;
-                CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
-                conf->Save();
+                fan_conf->startMinimized = !fan_conf->startMinimized;
+                CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, fan_conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
+                fan_conf->Save();
             } break;
             case IDC_BUT_RESET:
             {
-                temp_block* cur = conf->FindSensor(conf->lastSelectedSensor);
+                temp_block* cur = fan_conf->FindSensor(fan_conf->lastSelectedSensor);
                 if (cur) {
-                    fan_block* fan = conf->FindFanBlock(cur, conf->lastSelectedFan);
+                    fan_block* fan = fan_conf->FindFanBlock(cur, fan_conf->lastSelectedFan);
                     if (fan) {
                         fan->points.clear();
                         fan->points.push_back({0,0});
                         fan->points.push_back({100,0});
-                        DrawFan(hDlg);
+                        DrawFan();
                     }
                 }
             } break;
@@ -506,6 +531,13 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             ShowWindow(hDlg, SW_HIDE);
         }
         break;
+    case WM_MOVE:
+    {
+        // Reposition child...
+        RECT cDlg;
+        GetWindowRect(hDlg, &cDlg);
+        SetWindowPos(fanWindow, hDlg, cDlg.right, cDlg.top, 0, 0, SWP_NOSIZE | SWP_NOREDRAW | SWP_NOACTIVATE);
+    } break;
     case WM_APP + 1: {
         switch (lParam)
         {
@@ -539,31 +571,31 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                     // Select other item...
                     if (lPoint->iItem != -1) {
                         // Select other fan....
-                        conf->lastSelectedFan = lPoint->iItem;
+                        fan_conf->lastSelectedFan = lPoint->iItem;
                         // Redraw fans
-                        DrawFan(hDlg);
+                        DrawFan();
                     }
                 }
                 if (lPoint->uNewState & 0x2000) { // checked, 0x1000 - unchecked
-                    if (conf->lastSelectedSensor != -1) {
-                        temp_block* sen = conf->FindSensor(conf->lastSelectedSensor);
+                    if (fan_conf->lastSelectedSensor != -1) {
+                        temp_block* sen = fan_conf->FindSensor(fan_conf->lastSelectedSensor);
                         if (!sen) { // add new sensor block
                             sen = new temp_block;
-                            sen->sensorIndex = (short)conf->lastSelectedSensor;
-                            conf->tempControls.push_back(*sen);
+                            sen->sensorIndex = (short)fan_conf->lastSelectedSensor;
+                            fan_conf->tempControls.push_back(*sen);
                             delete sen;
-                            sen = &conf->tempControls.back();
+                            sen = &fan_conf->tempControls.back();
                         }
                         fan_block cFan = {(short)lPoint->iItem};
                         cFan.points.push_back({0,0});
                         cFan.points.push_back({100,0});
                         sen->fans.push_back(cFan);
-                        DrawFan(hDlg);
+                        DrawFan();
                     }
                 }
                 if (lPoint->uNewState & 0x1000 && lPoint->uOldState && 0x2000) { // unchecked
-                    if (conf->lastSelectedSensor != -1) {
-                        temp_block* sen = conf->FindSensor(conf->lastSelectedSensor);
+                    if (fan_conf->lastSelectedSensor != -1) {
+                        temp_block* sen = fan_conf->FindSensor(fan_conf->lastSelectedSensor);
                         if (sen) { // remove sensor block
                             for (vector<fan_block>::iterator iFan = sen->fans.begin();
                                  iFan < sen->fans.end(); iFan++)
@@ -572,14 +604,14 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                                     break;
                                 }
                             if (!sen->fans.size()) // remove sensor block!
-                                for (vector<temp_block>::iterator iSen = conf->tempControls.begin();
-                                     iSen < conf->tempControls.end(); iSen++)
+                                for (vector<temp_block>::iterator iSen = fan_conf->tempControls.begin();
+                                     iSen < fan_conf->tempControls.end(); iSen++)
                                     if (iSen->sensorIndex == sen->sensorIndex) {
-                                        conf->tempControls.erase(iSen);
+                                        fan_conf->tempControls.erase(iSen);
                                         break;
                                     }
                         }
-                        DrawFan(hDlg);
+                        DrawFan();
                     }
                 }
             } break;
@@ -594,10 +626,10 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                     // Select other item...
                     if (lPoint->iItem != -1) {
                         // Select other fan....
-                        conf->lastSelectedSensor = lPoint->iItem;
+                        fan_conf->lastSelectedSensor = lPoint->iItem;
                         // Redraw fans
-                        ReloadFanView(hDlg, conf->lastSelectedFan);
-                        DrawFan(hDlg);
+                        ReloadFanView(hDlg, fan_conf->lastSelectedFan);
+                        DrawFan();
                     }
                 }
             } break;
@@ -608,11 +640,11 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CLOSE:
         EndDialog(hDlg, IDOK);
         mon->Stop();
-        Shell_NotifyIcon(NIM_DELETE, &conf->niData);
+        Shell_NotifyIcon(NIM_DELETE, &fan_conf->niData);
         DestroyWindow(hDlg);
         break;
     case WM_DESTROY:
-        conf->Save();
+        fan_conf->Save();
         PostQuitMessage(0);
         break;
     }
@@ -698,7 +730,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    fan_block* cFan = conf->FindFanBlock(conf->FindSensor(conf->lastSelectedSensor), conf->lastSelectedFan);
+    fan_block* cFan = fan_conf->FindFanBlock(fan_conf->FindSensor(fan_conf->lastSelectedSensor), fan_conf->lastSelectedFan);
     RECT cArea;
     GetClientRect(hDlg, &cArea);
     cArea.right -= 1;
@@ -711,7 +743,7 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hDlg, &ps);      
-        DrawFan(GetParent(hDlg));
+        DrawFan();
         EndPaint(hDlg, &ps);
         return true;
     } break;
@@ -723,9 +755,9 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 boost = (100 * (cArea.bottom - GET_Y_LPARAM(lParam))) / (cArea.bottom - cArea.top);
             lastFanPoint->temp = temp < 0 ? 0 : temp > 100 ? 100 : temp;
             lastFanPoint->boost = boost < 0 ? 0 : boost > 100 ? 100 : boost;
-            DrawFan(GetParent(hDlg), 1, x, y);
+            DrawFan(1, x, y);
         } else
-            DrawFan(GetParent(hDlg), 2, x, y);
+            DrawFan(2, x, y);
     } break;
     case WM_LBUTTONDOWN:
     {
@@ -748,7 +780,7 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                     break;
                 }
             }
-            DrawFan(GetParent(hDlg));
+            DrawFan();
         }
     } break;
     case WM_LBUTTONUP: {
@@ -764,9 +796,10 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             cFan->points.front().temp = 0;
             cFan->points.back().temp = 100;
-            DrawFan(GetParent(hDlg));
-            conf->Save();
+            DrawFan();
+            fan_conf->Save();
         }
+        SetFocus(GetParent(hDlg));
     } break;
     case WM_RBUTTONUP: {
         // remove point from curve...
@@ -782,9 +815,10 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                     cFan->points.erase(fPi);
                     break;
                 }
-            DrawFan(GetParent(hDlg));
-            conf->Save();
+            DrawFan();
+            fan_conf->Save();
         }
+        SetFocus(GetParent(hDlg));
     } break;
     //case WM_SETCURSOR:
     //{
@@ -805,5 +839,5 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     default:
         int i = 0;
     }
-    return (INT_PTR)FALSE;
+    return DefWindowProc(hDlg, message, wParam, lParam);
 }

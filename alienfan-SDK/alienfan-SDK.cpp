@@ -10,10 +10,10 @@ namespace AlienFan_SDK {
 	// AMW interface com - 3 parameters (not used, com, buffer).
 	TCHAR* mainCommand = (TCHAR*) TEXT("\\____SB_AMW1WMAX");
 
-	Control::Control(int driverID) {
-		SetBinaryID(driverID);
+	Control::Control() {
+
 		acc = OpenAcpiService();
-		switch ((int)acc) {
+		switch ((LONG_PTR)acc) {
 		case -1:
 			return;
 		case 0:
@@ -29,7 +29,8 @@ namespace AlienFan_SDK {
 	}
 
 	void Control::UnloadService() {
-		CloseAcpiService(acc);
+		if (acc != INVALID_HANDLE_VALUE && acc)
+			CloseAcpiService(acc);
 		acc = NULL;
 	}
 
@@ -164,6 +165,13 @@ namespace AlienFan_SDK {
 	int Control::SetPower(int level) {
 		if (level < powers.size())
 			return RunMainCommand(devs[aDev].setPower.com, devs[aDev].setPower.sub, (byte)powers[level]);
+		return -1;
+	}
+	int Control::GetPower() {
+		int pl = RunMainCommand(devs[aDev].getPower.com, devs[aDev].getPower.sub);
+		for (int i = 0; pl > 0 && i < powers.size(); i++)
+			if (powers[i] == pl)
+				return i;
 		return -1;
 	}
 	HANDLE Control::GetHandle() {

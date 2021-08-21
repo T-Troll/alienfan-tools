@@ -27,6 +27,7 @@ namespace AlienFan_SDK {
 		ALIENFAN_COMMAND getFanBoost;
 		ALIENFAN_COMMAND setFanBoost;
 		ALIENFAN_COMMAND getTemp;
+		ALIENFAN_COMMAND getPower;
 		ALIENFAN_COMMAND setPower;
 		ALIENFAN_COMMAND setGPUPower;
 	};
@@ -40,6 +41,7 @@ namespace AlienFan_SDK {
 			0x14, 0xc, // Boost
 			0x15,   2, // Set boost
 			0x14,   4, // Temp
+			0x14, 0xb, // Get Power (value, not index!)
 			0x15,   1, // Set Power
 			   0,   0  // GPU power
 		}, 
@@ -53,7 +55,7 @@ namespace AlienFan_SDK {
 		bool activated = false;
 		//int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
 	public:
-		Control(int driverID);
+		Control();
 		~Control();
 		void UnloadService();
 		bool Probe();
@@ -63,6 +65,7 @@ namespace AlienFan_SDK {
 		int GetTempValue(int TempID);
 		int Unlock();
 		int SetPower(int level);
+		int GetPower();
 		HANDLE GetHandle();
 		bool IsActivated();
 		int HowManyFans();

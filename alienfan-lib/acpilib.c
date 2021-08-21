@@ -47,14 +47,6 @@ PACPI_NAMESPACE pLocalAcpiNS = NULL;
 UINT  uLocalAcpiNSCount      = 0;
 UINT  uLocalMethodOffset     = METHOD_START_INDEX;
 
-int driverBinaryID = 0;
-
-void
-APIENTRY
-SetBinaryID(int newID) {
-    driverBinaryID = newID;
-}
-
 VOID
 AmlParser(
     PACPI_NAMESPACE pNode,
@@ -842,39 +834,7 @@ Return Value:
         //
         if (!GetServiceName(driverLocation, MAX_PATH)) {
             ApiError(0, _T("Driver file not found!"));
-#ifndef STEADY_FILE
-            HANDLE hndFile = CreateFile(
-                driverLocation,
-                GENERIC_WRITE,
-                0,
-                NULL,
-                CREATE_NEW,
-                0,
-                NULL
-            );
-
-            if (hndFile != INVALID_HANDLE_VALUE && driverBinaryID ) {
-                // No driver file, create one...
-                HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(driverBinaryID), TEXT("Driver"));
-                if (driverInfo) {
-                    HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
-                    BYTE* driverBin = (BYTE*) LockResource(driverHandle);
-                    DWORD writeBytes = SizeofResource(NULL, driverInfo);
-                    WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
-                    CloseHandle(hndFile);
-                    ApiError(0,_T("Driver unpacked"));
-                    UnlockResource(driverHandle);
-                } else {
-                    CloseHandle(hndFile);
-                    DeleteFile(driverLocation);
-                    ApiError(0,_T("Can't unpack driver"));
-                    return INVALID_HANDLE_VALUE;
-                }
-            } else
-                ApiError(0,_T("Driver file already present"));
-#else
             return INVALID_HANDLE_VALUE;
-#endif
         }
 
         if (!ManageService(_T("HwAcc"),
@@ -1040,10 +1000,6 @@ Return Value:
             driverLocation,
             DRIVER_FUNC_REMOVE
         );
-#ifndef STEADY_FILE
-        // remove driver file
-        DeleteFile(driverLocation);
-#endif
     }
 #endif
 }

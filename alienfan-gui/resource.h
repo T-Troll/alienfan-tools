@@ -18,11 +18,8 @@
 #define IDC_BUT_CLOSE                   1006
 #define IDC_BUT_RESET                   1007
 #define IDC_STATIC_VERSION              1009
-#define IDC_FAN_RPM                     1009
 #define IDC_SYSLINK_HOMEPAGE            1010
-#define IDC_FAN_CURVE                   1012
 #define IDM_SETTINGS_STARTWITHWINDOWS   32776
-#define IDC_SETTINGS_STARTMINIMIZED     32778
 #define IDM_SETTINGS_STARTMINIMIZED     32779
 #define IDC_STATIC                      -1
 

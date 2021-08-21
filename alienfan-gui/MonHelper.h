@@ -8,11 +8,11 @@ private:
 	HANDLE dwHandle;
 public:
 	ConfigHelper* conf;
-	HWND dlg;
+	HWND dlg = NULL, fDlg = NULL;
 	HANDLE stopEvent;
 	AlienFan_SDK::Control* acpi;
 
-	MonHelper(HWND, ConfigHelper*, AlienFan_SDK::Control*);
+	MonHelper(HWND, HWND, ConfigHelper*, AlienFan_SDK::Control*);
 	~MonHelper();
 	void Start();
 	void Stop();

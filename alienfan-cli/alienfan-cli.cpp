@@ -6,7 +6,7 @@
 #include "alienfan-SDK.h"
 #include "resource.h"
 #include "acpilib.h"
-//#include "acpi.h"
+//#include "acpi->h"
 
 using namespace std;
 
@@ -49,6 +49,7 @@ void Usage() {
         << "rpm\t\t\t\tShow fan(s) RPMs" << endl
         << "temp\t\t\t\tShow known temperature sensors values" << endl
         << "unlock\t\t\t\tUnclock fan controls" << endl
+        << "getpower\t\t\tDisplay current power state" << endl
         << "power=<value>\t\t\tSet TDP to this level" << endl
         << "getfans\t\t\t\tShow current fan boost level (0..100 - in percent)" << endl
         << "setfans=<fan1>[,<fan2>]\t\tSet fans boost level (0..100 - in percent)" << endl
@@ -57,17 +58,52 @@ void Usage() {
         << "  number of fan boost values should be the same as a number fans detected" << endl;
 }
 
+wstring UnpackDriver() {
+    // Unpack driver file, if not exist...
+    wchar_t currentPath[MAX_PATH];
+    GetModuleFileName(NULL, currentPath, MAX_PATH);
+    wstring name = currentPath;
+    name.resize(name.find_last_of(TEXT("\\")));
+    name+= TEXT("\\HwAcc.sys");
+    HANDLE hndFile = CreateFile(
+        name.c_str(),
+        GENERIC_WRITE,
+        0,
+        NULL,
+        CREATE_NEW,
+        0,
+        NULL
+    );
+
+    if (hndFile != INVALID_HANDLE_VALUE ) {
+        // No driver file, create one...
+        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), TEXT("Driver"));
+        if (driverInfo) {
+            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
+            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
+            DWORD writeBytes = SizeofResource(NULL, driverInfo);
+            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
+            UnlockResource(driverHandle);
+        }
+        CloseHandle(hndFile);
+    } else
+        return TEXT("");
+    return name;
+}
+
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.8\n";
+    std::cout << "AlienFan-cli v0.0.10\n";
 
-    AlienFan_SDK::Control acpi(IDR_DRIVER);
+    wstring drvName = UnpackDriver();
 
-    if (acpi.IsActivated()) {
+    AlienFan_SDK::Control* acpi = new AlienFan_SDK::Control();
 
-        if (acpi.Probe()) {
-            cout << "Supported hardware detected, " << acpi.HowManyFans() << " fans, " 
-                << acpi.sensors.size() << " sensors, " << acpi.HowManyPower() << " power states." << endl;
+    if (acpi->IsActivated()) {
+
+        if (acpi->Probe()) {
+            cout << "Supported hardware detected, " << acpi->HowManyFans() << " fans, " 
+                << acpi->sensors.size() << " sensors, " << acpi->HowManyPower() << " power states." << endl;
 
             if (argc < 2) 
             {
@@ -97,8 +133,8 @@ int main(int argc, char* argv[])
                 }
                 if (command == "rpm") {
                     int prms = 0;
-                    for (int i = 0; i < acpi.HowManyFans(); i++)
-                        if ((prms = acpi.GetFanRPM(i)) >= 0)
+                    for (int i = 0; i < acpi->HowManyFans(); i++)
+                        if ((prms = acpi->GetFanRPM(i)) >= 0)
                             cout << "Fan#" << i << ": " << prms << endl;
                         else {
                             cout << "RPM reading failed!" << endl;
@@ -114,20 +150,20 @@ int main(int argc, char* argv[])
                 }
                 if (command == "temp") {
                     int res = 0;
-                    for (int i = 0; i < acpi.sensors.size(); i++) {
-                        if ((res = acpi.GetTempValue(i)) >= 0)
-                            cout << acpi.sensors[i].name << ": " << res << endl;
+                    for (int i = 0; i < acpi->sensors.size(); i++) {
+                        if ((res = acpi->GetTempValue(i)) >= 0)
+                            cout << acpi->sensors[i].name << ": " << res << endl;
                     }
                     continue;
                 }
                 if (command == "dump") {
                     ACPI_NS_DATA data = {0};
-                    QueryAcpiNS(acpi.GetHandle(), &data, 0xc1);
+                    QueryAcpiNS(acpi->GetHandle(), &data, 0xc1);
                     DumpAcpi(data);
                     continue;
                 }
                 if (command == "unlock") {
-                    if (acpi.Unlock() >= 0)
+                    if (acpi->Unlock() >= 0)
                         cout << "Unlock successful." << endl;
                     else
                         cout << "Unlock failed!" << endl;
@@ -139,19 +175,27 @@ int main(int argc, char* argv[])
                         continue;
                     }
                     BYTE unlockStage = atoi(args[0].c_str());
-                    if (unlockStage < acpi.HowManyPower()) {
-                        if (acpi.SetPower(unlockStage) >= 0)
+                    if (unlockStage < acpi->HowManyPower()) {
+                        if (acpi->SetPower(unlockStage) >= 0)
                             cout << "Power set to " << (int) unlockStage << endl;
                         else
                             cout << "Power set failed!" << endl;
                     } else
-                        cout << "Power: incorrect value (should be 0.." << acpi.HowManyPower() << ")" << endl;
+                        cout << "Power: incorrect value (should be 0.." << acpi->HowManyPower() << ")" << endl;
+                    continue;
+                }
+                if (command == "getpower") {
+                    int cpower = acpi->GetPower();
+                    if (cpower >= 0)
+                        cout << "Current power mode: " << cpower << endl;
+                    else
+                        cout << "Getpower failed!" << endl;
                     continue;
                 }
                 if (command == "getfans") {
                     int prms = 0;
-                    for (int i = 0; i < acpi.HowManyFans(); i++)
-                        if ((prms = acpi.GetFanValue(i)) >= 0)
+                    for (int i = 0; i < acpi->HowManyFans(); i++)
+                        if ((prms = acpi->GetFanValue(i)) >= 0)
                             cout << "Fan#" << i << " now at " << prms << endl;
                         else {
                             cout << "Get fan settings failed!" << endl;
@@ -160,14 +204,14 @@ int main(int argc, char* argv[])
                     continue;
                 }
                 if (command == "setfans") {
-                    if (args.size() < acpi.HowManyFans()) {
-                        cout << "Setfans: incorrect arguments (should be " << acpi.HowManyFans() << ")" << endl;
+                    if (args.size() < acpi->HowManyFans()) {
+                        cout << "Setfans: incorrect arguments (should be " << acpi->HowManyFans() << ")" << endl;
                         continue;
                     }
                     int prms = 0;
-                    for (int i = 0; i < acpi.HowManyFans(); i++) {
+                    for (int i = 0; i < acpi->HowManyFans(); i++) {
                         BYTE boost = atoi(args[i].c_str());
-                        if (acpi.SetFanValue(i, boost))
+                        if (acpi->SetFanValue(i, boost))
                             cout << "Fan#" << i << " set to " << (int) boost << endl;
                         else {
                             cout << "Set fan level failed!" << endl;
@@ -189,7 +233,7 @@ int main(int argc, char* argv[])
                         value1 = atoi(args[2].c_str());
                     if (args.size() > 3)
                         value2 = atoi(args[3].c_str());
-                    if ((res = acpi.RunMainCommand(command, subcommand, value1, value2)) >=0)
+                    if ((res = acpi->RunMainCommand(command, subcommand, value1, value2)) >=0)
                         cout << "Direct call result: " << res << endl;
                     else {
                         cout << "Direct call failed!" << endl;
@@ -247,9 +291,14 @@ int main(int argc, char* argv[])
             }
         } else {
             cout << "Supported hardware not found!" << endl;
+            acpi->UnloadService();
         }
     } else {
-        cout << "Driver initialization issue." << endl;
+        cout << "System configuration issue - see readme.md for details!" << endl;
     }
+    delete acpi;
+#ifndef KERNEL_HACK
+    DeleteFile(drvName.c_str());
+#endif
     //cout << "Done!" << endl;
 }
