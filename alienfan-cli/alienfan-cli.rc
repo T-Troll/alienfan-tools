@@ -60,7 +60,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // Driver
 //
 
-IDR_DRIVER              Driver                  "C:\\work\\DevStudio\\alienfan-tools\\x64\\Release\\HwAcc\\HwAcc.sys"
+IDR_DRIVER              Driver                  "..\\x64\\Release\\HwAcc\\HwAcc.sys"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
