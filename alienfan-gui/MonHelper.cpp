@@ -58,28 +58,29 @@ DWORD WINAPI CMonProc(LPVOID param) {
 		bool visible = !IsIconic(src->dlg);
 
 		// temps..
-		for (int i = 0; visible && i < src->acpi->HowManySensors(); i++) {
+		for (int i = 0; i < src->acpi->HowManySensors(); i++) {
 			int sValue = src->acpi->GetTempValue(i);
 			if (sValue != senValues[i]) {
 				senValues[i] = sValue;
-				string name = to_string(sValue);
-				ListView_SetItemText(tempList, i, 0, (LPSTR) name.c_str());
+				if (visible && tempList) {
+					string name = to_string(sValue);
+					ListView_SetItemText(tempList, i, 0, (LPSTR) name.c_str());
+				}
 			}
 		}
 
 		// fans...
 		for (int i = 0; i < src->acpi->HowManyFans(); i++) {
 			boostSets[i] = 0;
-			if (visible) {
+			boostValues[i] = src->acpi->GetFanValue(i);
+			if (visible && fanList) {
 				int rpValue = src->acpi->GetFanRPM(i);
-				int boostValue = src->acpi->GetFanValue(i);
 				if (rpValue != fanValues[i]) {
 					// Update RPM block...
 					fanValues[i] = rpValue;
-					string name = "Fan " + to_string(i+1) + " (" + to_string(rpValue) + ")";
+					string name = "Fan " + to_string(i + 1) + " (" + to_string(rpValue) + ")";
 					ListView_SetItemText(fanList, i, 0, (LPSTR) name.c_str());
 				}
-				boostValues[i] = boostValue;
 			}
 		}
 
@@ -109,6 +110,10 @@ DWORD WINAPI CMonProc(LPVOID param) {
 			for (int i = 0; i < src->acpi->HowManyFans(); i++)
 				if (boostSets[i] != boostValues[i]) {
 					src->acpi->SetFanValue(i, boostSets[i]);
+#ifdef _DEBUG
+					string msg = "Boost for fan#" + to_string(i) + " changed to " + to_string(boostSets[i]) + "\n";
+					OutputDebugString(msg.c_str());
+#endif
 					if (visible && src->fDlg && i == src->conf->lastSelectedFan) {
 						SendMessage(src->fDlg, WM_PAINT, 0, 0);
 						string rpmText = "Fan curve (boost: " + to_string(boostSets[i]) + ")";

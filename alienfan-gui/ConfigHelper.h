@@ -25,8 +25,8 @@ private:
 	HKEY   hKey1, hKey2;
 public:
 	DWORD lastPowerStage = 0;
-	DWORD lastSelectedFan = 0;
-	DWORD lastSelectedSensor = 0;
+	DWORD lastSelectedFan = -1;
+	DWORD lastSelectedSensor = -1;
 	DWORD startWithWindows = 0;
 	DWORD startMinimized = 0;
 	vector<temp_block> tempControls;
