@@ -59,9 +59,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="driver1.bin">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="..\x64\Release\HwAcc\HwAcc.sys" />
   </ItemGroup>
 </Project>

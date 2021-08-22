@@ -93,7 +93,7 @@ wstring UnpackDriver() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.10\n";
+    std::cout << "AlienFan-cli v0.0.10.1\n";
 
     wstring drvName = UnpackDriver();
 
@@ -108,186 +108,186 @@ int main(int argc, char* argv[])
             if (argc < 2) 
             {
                 Usage();
-                return 1;
-            }
+            } else {
 
-            for (int cc = 1; cc < argc; cc++) {
-                string arg = string(argv[cc]);
-                size_t vid = arg.find_first_of('=');
-                string command = arg.substr(0, vid);
-                string values;
-                vector<string> args;
-                if (vid != string::npos) {
-                    size_t vpos = 0;
-                    values = arg.substr(vid + 1, arg.size());
-                    while (vpos < values.size()) {
-                        size_t tvpos = values.find(',', vpos);
-                        args.push_back(values.substr(vpos, tvpos - vpos));
-                        vpos = tvpos == string::npos ? values.size() : tvpos + 1;
-                    }
-                }
-                //cerr << "Executing " << command << " with " << values << endl;
-                if (command == "usage" || command == "help" || command == "?") {
-                    Usage();
-                    continue;
-                }
-                if (command == "rpm") {
-                    int prms = 0;
-                    for (int i = 0; i < acpi->HowManyFans(); i++)
-                        if ((prms = acpi->GetFanRPM(i)) >= 0)
-                            cout << "Fan#" << i << ": " << prms << endl;
-                        else {
-                            cout << "RPM reading failed!" << endl;
-                            break;
+                for (int cc = 1; cc < argc; cc++) {
+                    string arg = string(argv[cc]);
+                    size_t vid = arg.find_first_of('=');
+                    string command = arg.substr(0, vid);
+                    string values;
+                    vector<string> args;
+                    if (vid != string::npos) {
+                        size_t vpos = 0;
+                        values = arg.substr(vid + 1, arg.size());
+                        while (vpos < values.size()) {
+                            size_t tvpos = values.find(',', vpos);
+                            args.push_back(values.substr(vpos, tvpos - vpos));
+                            vpos = tvpos == string::npos ? values.size() : tvpos + 1;
                         }
-                    //prms = RunMainCommand(0x14, 0x8, 0x32);
-                    //if (prms >= 0)
-                    //    cout << "Target CPU fan: " << prms;
-                    //prms = RunMainCommand(0x14, 0x8, 0x33);
-                    //if (prms >= 0)
-                    //    cout << ", Target GPU fan: " << prms << endl;
-                    continue;
-                }
-                if (command == "temp") {
-                    int res = 0;
-                    for (int i = 0; i < acpi->sensors.size(); i++) {
-                        if ((res = acpi->GetTempValue(i)) >= 0)
-                            cout << acpi->sensors[i].name << ": " << res << endl;
                     }
-                    continue;
-                }
-                if (command == "dump") {
-                    ACPI_NS_DATA data = {0};
-                    QueryAcpiNS(acpi->GetHandle(), &data, 0xc1);
-                    DumpAcpi(data);
-                    continue;
-                }
-                if (command == "unlock") {
-                    if (acpi->Unlock() >= 0)
-                        cout << "Unlock successful." << endl;
-                    else
-                        cout << "Unlock failed!" << endl;
-                    continue;
-                }
-                if (command == "power") {
-                    if (args.size() < 1) {
-                        cout << "Power: incorrect arguments" << endl;
+                    //cerr << "Executing " << command << " with " << values << endl;
+                    if (command == "usage" || command == "help" || command == "?") {
+                        Usage();
                         continue;
                     }
-                    BYTE unlockStage = atoi(args[0].c_str());
-                    if (unlockStage < acpi->HowManyPower()) {
-                        if (acpi->SetPower(unlockStage) >= 0)
-                            cout << "Power set to " << (int) unlockStage << endl;
+                    if (command == "rpm") {
+                        int prms = 0;
+                        for (int i = 0; i < acpi->HowManyFans(); i++)
+                            if ((prms = acpi->GetFanRPM(i)) >= 0)
+                                cout << "Fan#" << i << ": " << prms << endl;
+                            else {
+                                cout << "RPM reading failed!" << endl;
+                                break;
+                            }
+                        //prms = RunMainCommand(0x14, 0x8, 0x32);
+                        //if (prms >= 0)
+                        //    cout << "Target CPU fan: " << prms;
+                        //prms = RunMainCommand(0x14, 0x8, 0x33);
+                        //if (prms >= 0)
+                        //    cout << ", Target GPU fan: " << prms << endl;
+                        continue;
+                    }
+                    if (command == "temp") {
+                        int res = 0;
+                        for (int i = 0; i < acpi->sensors.size(); i++) {
+                            if ((res = acpi->GetTempValue(i)) >= 0)
+                                cout << acpi->sensors[i].name << ": " << res << endl;
+                        }
+                        continue;
+                    }
+                    if (command == "dump") {
+                        ACPI_NS_DATA data = {0};
+                        QueryAcpiNS(acpi->GetHandle(), &data, 0xc1);
+                        DumpAcpi(data);
+                        continue;
+                    }
+                    if (command == "unlock") {
+                        if (acpi->Unlock() >= 0)
+                            cout << "Unlock successful." << endl;
                         else
-                            cout << "Power set failed!" << endl;
-                    } else
-                        cout << "Power: incorrect value (should be 0.." << acpi->HowManyPower() << ")" << endl;
-                    continue;
-                }
-                if (command == "getpower") {
-                    int cpower = acpi->GetPower();
-                    if (cpower >= 0)
-                        cout << "Current power mode: " << cpower << endl;
-                    else
-                        cout << "Getpower failed!" << endl;
-                    continue;
-                }
-                if (command == "getfans") {
-                    int prms = 0;
-                    for (int i = 0; i < acpi->HowManyFans(); i++)
-                        if ((prms = acpi->GetFanValue(i)) >= 0)
-                            cout << "Fan#" << i << " now at " << prms << endl;
-                        else {
-                            cout << "Get fan settings failed!" << endl;
-                            break;
-                        }
-                    continue;
-                }
-                if (command == "setfans") {
-                    if (args.size() < acpi->HowManyFans()) {
-                        cout << "Setfans: incorrect arguments (should be " << acpi->HowManyFans() << ")" << endl;
+                            cout << "Unlock failed!" << endl;
                         continue;
                     }
-                    int prms = 0;
-                    for (int i = 0; i < acpi->HowManyFans(); i++) {
-                        BYTE boost = atoi(args[i].c_str());
-                        if (acpi->SetFanValue(i, boost))
-                            cout << "Fan#" << i << " set to " << (int) boost << endl;
-                        else {
-                            cout << "Set fan level failed!" << endl;
-                            break;
+                    if (command == "power") {
+                        if (args.size() < 1) {
+                            cout << "Power: incorrect arguments" << endl;
+                            continue;
                         }
-                    }
-                    continue;
-                }
-                if (command == "direct") {
-                    int res = 0;
-                    if (args.size() < 2) {
-                        cout << "Direct: incorrect arguments (should be 2 or 3)" << endl;
+                        BYTE unlockStage = atoi(args[0].c_str());
+                        if (unlockStage < acpi->HowManyPower()) {
+                            if (acpi->SetPower(unlockStage) >= 0)
+                                cout << "Power set to " << (int) unlockStage << endl;
+                            else
+                                cout << "Power set failed!" << endl;
+                        } else
+                            cout << "Power: incorrect value (should be 0.." << acpi->HowManyPower() << ")" << endl;
                         continue;
                     }
-                    USHORT command = atoi(args[0].c_str());
-                    byte subcommand = atoi(args[1].c_str()),
-                       value1 = 0, value2 = 0;
-                    if (args.size() > 2)
-                        value1 = atoi(args[2].c_str());
-                    if (args.size() > 3)
-                        value2 = atoi(args[3].c_str());
-                    if ((res = acpi->RunMainCommand(command, subcommand, value1, value2)) >=0)
-                        cout << "Direct call result: " << res << endl;
-                    else {
-                        cout << "Direct call failed!" << endl;
-                        break;
+                    if (command == "getpower") {
+                        int cpower = acpi->GetPower();
+                        if (cpower >= 0)
+                            cout << "Current power mode: " << cpower << endl;
+                        else
+                            cout << "Getpower failed!" << endl;
+                        continue;
                     }
-                    continue;
-                }
-                if (command == "test") { // pseudo block for tes modules
-                    // _SB.PCI0.LPCB.EC0.DRCB
-                    TCHAR command[] = TEXT("\\____SB_PCI0LPCBEC0_DRCB");
-                    TCHAR command2[] = TEXT("\\____SB_PCI0LPCBEC0_CRLV");
-                    PACPI_EVAL_OUTPUT_BUFFER res = NULL;
-                    USHORT nsType = GetNSType(command);
-                    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command, &nsType);
-                    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
-                    ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
-                    acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0xd2);
-                    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command2, acpiargs);
-                    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command, acpiargs);
-                    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
-                    if (res) {
-                        NotifyDevice((TCHAR*)TEXT("\\____SB_PCI0PEG0PEGP"), 0xd2);
-                        cout << res->Argument[0].Argument << endl;
+                    if (command == "getfans") {
+                        int prms = 0;
+                        for (int i = 0; i < acpi->HowManyFans(); i++)
+                            if ((prms = acpi->GetFanValue(i)) >= 0)
+                                cout << "Fan#" << i << " now at " << prms << endl;
+                            else {
+                                cout << "Get fan settings failed!" << endl;
+                                break;
+                            }
+                        continue;
                     }
-                //    ////_SB_PCI0B0D4PMAX PTDP PMIN TMAX PWRU
-                //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"));
-                //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"), &nType);
-                //    //if (res) {
-                //    //    cout << "PTDP = " << res->Argument[0].Argument << endl;
-                //    //}
-                //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"));
-                //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"), &nType);
-                //    //if (res) {
-                //    //    cout << "PMAX = " << res->Argument[0].Argument << endl;
-                //    //}
-                //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"));
-                //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"), &nType);
-                //    //if (res) {
-                //    //    cout << "PMIN = " << res->Argument[0].Argument << endl;
-                //    //}
-                //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"));
-                //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"), &nType);
-                //    //if (res) {
-                //    //    cout << "TMAX = " << res->Argument[0].Argument << endl;
-                //    //}
-                //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"));
-                //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"), &nType);
-                //    //if (res) {
-                //    //    cout << "PWRU = " << res->Argument[0].Argument << endl;
-                //    //}
-                //    int tRes = RunMainCommand(0x6, 0x0);
-                    continue;
+                    if (command == "setfans") {
+                        if (args.size() < acpi->HowManyFans()) {
+                            cout << "Setfans: incorrect arguments (should be " << acpi->HowManyFans() << ")" << endl;
+                            continue;
+                        }
+                        int prms = 0;
+                        for (int i = 0; i < acpi->HowManyFans(); i++) {
+                            BYTE boost = atoi(args[i].c_str());
+                            if (acpi->SetFanValue(i, boost))
+                                cout << "Fan#" << i << " set to " << (int) boost << endl;
+                            else {
+                                cout << "Set fan level failed!" << endl;
+                                break;
+                            }
+                        }
+                        continue;
+                    }
+                    if (command == "direct") {
+                        int res = 0;
+                        if (args.size() < 2) {
+                            cout << "Direct: incorrect arguments (should be 2 or 3)" << endl;
+                            continue;
+                        }
+                        USHORT command = atoi(args[0].c_str());
+                        byte subcommand = atoi(args[1].c_str()),
+                            value1 = 0, value2 = 0;
+                        if (args.size() > 2)
+                            value1 = atoi(args[2].c_str());
+                        if (args.size() > 3)
+                            value2 = atoi(args[3].c_str());
+                        if ((res = acpi->RunMainCommand(command, subcommand, value1, value2)) >= 0)
+                            cout << "Direct call result: " << res << endl;
+                        else {
+                            cout << "Direct call failed!" << endl;
+                            break;
+                        }
+                        continue;
+                    }
+                    //if (command == "test") { // pseudo block for tes modules
+                    //    // _SB.PCI0.LPCB.EC0.DRCB
+                    //    TCHAR command[] = TEXT("\\____SB_PCI0LPCBEC0_DRCB");
+                    //    TCHAR command2[] = TEXT("\\____SB_PCI0LPCBEC0_CRLV");
+                    //    PACPI_EVAL_OUTPUT_BUFFER res = NULL;
+                    //    USHORT nsType = GetNSType(command);
+                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command, &nsType);
+                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
+                    //    ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
+                    //    acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0xd2);
+                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command2, acpiargs);
+                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command, acpiargs);
+                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
+                    //    if (res) {
+                    //        NotifyDevice((TCHAR*) TEXT("\\____SB_PCI0PEG0PEGP"), 0xd2);
+                    //        cout << res->Argument[0].Argument << endl;
+                    //    }
+                    //    //    ////_SB_PCI0B0D4PMAX PTDP PMIN TMAX PWRU
+                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"));
+                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"), &nType);
+                    //    //    //if (res) {
+                    //    //    //    cout << "PTDP = " << res->Argument[0].Argument << endl;
+                    //    //    //}
+                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"));
+                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"), &nType);
+                    //    //    //if (res) {
+                    //    //    //    cout << "PMAX = " << res->Argument[0].Argument << endl;
+                    //    //    //}
+                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"));
+                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"), &nType);
+                    //    //    //if (res) {
+                    //    //    //    cout << "PMIN = " << res->Argument[0].Argument << endl;
+                    //    //    //}
+                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"));
+                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"), &nType);
+                    //    //    //if (res) {
+                    //    //    //    cout << "TMAX = " << res->Argument[0].Argument << endl;
+                    //    //    //}
+                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"));
+                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"), &nType);
+                    //    //    //if (res) {
+                    //    //    //    cout << "PWRU = " << res->Argument[0].Argument << endl;
+                    //    //    //}
+                    //    //    int tRes = RunMainCommand(0x6, 0x0);
+                    //    continue;
+                    //}
+                    cout << "Unknown command - " << command << ", use \"usage\" or \"help\" for information" << endl;
                 }
-                cout << "Unknown command - " << command << ", use \"usage\" or \"help\" for information" << endl;
             }
         } else {
             cout << "Supported hardware not found!" << endl;
