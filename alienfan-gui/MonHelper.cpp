@@ -55,7 +55,10 @@ DWORD WINAPI CMonProc(LPVOID param) {
 
 	while (WaitForSingleObject(src->stopEvent, 500) == WAIT_TIMEOUT) {
 		// update values.....
-		bool visible = !IsIconic(src->dlg);
+		bool visible = IsWindowVisible(src->dlg);// IsIconic(src->dlg);
+
+		if (src->acpi->GetPower() != src->conf->lastPowerStage)
+			src->acpi->SetPower(src->conf->lastPowerStage);
 
 		// temps..
 		for (int i = 0; i < src->acpi->HowManySensors(); i++) {
@@ -85,7 +88,7 @@ DWORD WINAPI CMonProc(LPVOID param) {
 		}
 
 		// boosts..
-		if (src->conf->lastPowerStage == 0) {
+		if (!src->conf->lastPowerStage) {
 			// in manual mode, can set...
 			for (int i = 0; i < src->conf->tempControls.size(); i++) {
 				temp_block* sen = &src->conf->tempControls[i];
