@@ -37,7 +37,8 @@ NB: You should have acpilib.dll and hwacc.sys into the same folder.
 
 GUI application for fan control.  
 Then you start it, you will see 3 main windows - Temperaturs (with current reading), Fans (with checkboxes and current RPM) and Fan curve (graph).  
-Also, "Power mode" dropdown avaliable to select global power mode.
+Also, "Power mode" dropdown avaliable to select global power mode.  
+"GPU limit" slider define top maximal GPU board power limit shift. 0 (left) is no limit, 4 (right) - maximal limit. This feature only supported at some notebooks, and real limit can vary. You can use this value to keep more power at CPU or extend battery life.
 
 NB: Fans can only be controled if Power Mode set to "Manual"!
 
@@ -79,9 +80,11 @@ Avaliable commands:
 - `unlock` - Enable manual fan control
 - `getpower` - Print current power mode
 - `power=<value>` - Set system-defined power level. Possible levels autodetected from ACPI, see message at app start 
+- `gpu=<value>` - Set GPU power limit. Possible values from 0 (no limit) to 4 (max. limit).
 - `getfans` - Show current fan RPMs boost
 - `setfans=<fan1>,<fan2>...` - Set fans RPM boost level (0..100 - in percent). Fan1 is for CPU fan, Fan2 for GPU one. Number of arguments should be the same as number of fans application detect
 - `direct=<id>,<subid>[,val,val]` - Issue direct Alienware interface command (see below)  
+- `directgpu=<id>,<value>` - Issue direct GPU interface command (see below)
 
 NB: Setting Power level to non-zero value disables manual fan control!  
 
@@ -97,12 +100,16 @@ For example, for Aurora R7 command `direct=3,N` return fan ID for fan N or -1 (f
 
 You can share commands you find with me, and i'll add it into applications.
 
+`directgpu` command doing the same for GPU subsystem, altering some chip settings.
+
+NB: for both `direct` commands, all values are not decimal, but hex (like c8, a3, etc)! It made easy to test values found into ACPI dump.
+
 ## ToDo:
 - [x] Temperature sensors reading
 - [ ] Eliminate "Test mode" requirement
 - [ ] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
   - [x] Alienware m15/m17 (any release)
-  - [ ] Older Alienware (weed to repair my old one to check)
+  - [ ] Older Alienware (need to repair my old one to check)
   - [ ] Area 51 (need ACPI dump from it)
   - [ ] Desktops (work in progress)
 - [x] SDK lib for easy sharing
@@ -110,10 +117,10 @@ You can share commands you find with me, and i'll add it into applications.
 - [X] GUI 
 - [X] Temp-RPM curves and indirect RPM control
 - [x] CPU power limit control
-- [ ] GPU power contol
+- [x] GPU power contol
 - [ ] Direct fan RPM control for R1
 - [ ] Dynamic power distribution (CPU/GPU boost)
-- [ ] `alienfx-gui` integration
+- [x] `alienfx-gui` integration
 
 ## Tools Used
 * Visual Studio Community 2019

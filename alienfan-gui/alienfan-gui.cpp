@@ -108,6 +108,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
         if (fan_conf->lastPowerStage >= 0)
             acpi->SetPower(fan_conf->lastPowerStage);
+        if (fan_conf->lastGPUPower >= 0)
+            acpi->SetGPU(fan_conf->lastGPUPower);
 
         mon = new MonHelper(mDlg, fanWindow, fan_conf, acpi);
 
@@ -421,8 +423,8 @@ DWORD WINAPI CUpdateCheck(LPVOID lparam) {
 
 LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HWND power_list = GetDlgItem(hDlg, IDC_COMBO_POWER);// ,
-        //fan_control = GetDlgItem(hDlg, IDC_FAN_CURVE);
+    HWND power_list = GetDlgItem(hDlg, IDC_COMBO_POWER),
+        power_gpu = GetDlgItem(hDlg, IDC_SLIDER_GPU);
     if (message == newTaskBar) {
         // Started/restarted explorer...
         Shell_NotifyIcon(NIM_ADD, &fan_conf->niData);
@@ -451,10 +453,19 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                                         hDlg, NULL, hInst, 0);
         SetWindowLongPtr(fanWindow, GWLP_WNDPROC, (LONG_PTR) FanCurve);
         toolTip = CreateToolTip(fanWindow, NULL);
-        ShowWindow(fanWindow, SW_SHOWNA);
+        if (fan_conf->startMinimized) {
+            ShowWindow(fanWindow, SW_HIDE);
+        } else {
+            ShowWindow(fanWindow, SW_SHOWNA);
+        }
 
         CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTWITHWINDOWS, fan_conf->startWithWindows ? MF_CHECKED : MF_UNCHECKED);
         CheckMenuItem(GetMenu(hDlg), IDM_SETTINGS_STARTMINIMIZED, fan_conf->startMinimized ? MF_CHECKED : MF_UNCHECKED);
+
+        SendMessage(power_gpu, TBM_SETRANGE, true, MAKELPARAM(0, 4));
+        SendMessage(power_gpu, TBM_SETTICFREQ, 1, 0);
+        SendMessage(power_gpu, TBM_SETPOS, true, fan_conf->lastGPUPower);
+
         return true; 
     } break;
     case WM_COMMAND:
@@ -476,6 +487,7 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             } break;
             case IDC_BUT_MINIMIZE:
+                ShowWindow(fanWindow, SW_HIDE);
                 ShowWindow(hDlg, SW_HIDE);
                 break;
             case IDM_ABOUT:
@@ -543,6 +555,8 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case WM_LBUTTONDBLCLK:
         case WM_LBUTTONUP:
+            ShowWindow(fanWindow, SW_RESTORE);
+            DrawFan();
             ShowWindow(hDlg, SW_RESTORE);
             SetWindowPos(hDlg, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
             SetWindowPos(hDlg, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
@@ -637,6 +651,15 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             break;
         }
         break;
+    case WM_HSCROLL:
+        switch (LOWORD(wParam)) {
+        case TB_THUMBPOSITION: case TB_ENDTRACK: {
+            if ((HWND)lParam == power_gpu) {
+                fan_conf->lastGPUPower = (DWORD)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
+                acpi->SetGPU(fan_conf->lastGPUPower);
+            }
+         } break;
+        } break;
     case WM_CLOSE:
         EndDialog(hDlg, IDOK);
         mon->Stop();

@@ -27,6 +27,7 @@ public:
 	DWORD lastPowerStage = 0;
 	DWORD lastSelectedFan = -1;
 	DWORD lastSelectedSensor = -1;
+	DWORD lastGPUPower = -1;
 	DWORD startWithWindows = 0;
 	DWORD startMinimized = 0;
 	vector<temp_block> tempControls;

@@ -51,11 +51,15 @@ void Usage() {
         << "unlock\t\t\t\tUnclock fan controls" << endl
         << "getpower\t\t\tDisplay current power state" << endl
         << "power=<value>\t\t\tSet TDP to this level" << endl
+        << "gpu=<value>\t\t\tSet GPU power limit" << endl
         << "getfans\t\t\t\tShow current fan boost level (0..100 - in percent)" << endl
         << "setfans=<fan1>[,<fan2>]\t\tSet fans boost level (0..100 - in percent)" << endl
         << "direct=<id>,<subid>[,val,val]\tIssue direct interface command (for testing)" << endl
+        << "directgpu=<id>,<value>\t\tIssue direct GPU interface command (for testing)" << endl
         << "  Power level can be in 0..N - according to power states detected" << endl
-        << "  number of fan boost values should be the same as a number fans detected" << endl;
+        << "  GPU power limit can be in 0..4 - 0 - no limit, 4 - max. limit" << endl
+        << "  Number of fan boost values should be the same as a number fans detected" << endl
+        << "  All values in \"direct\" commands should be hex, not decimal!" << endl;
 }
 
 wstring UnpackDriver() {
@@ -93,7 +97,7 @@ wstring UnpackDriver() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.10.1\n";
+    std::cout << "AlienFan-cli v0.0.11.0\n";
 
     wstring drvName = UnpackDriver();
 
@@ -183,6 +187,18 @@ int main(int argc, char* argv[])
                             cout << "Power: incorrect value (should be 0.." << acpi->HowManyPower() << ")" << endl;
                         continue;
                     }
+                    if (command == "gpu") {
+                        if (args.size() < 1) {
+                            cout << "GPU: incorrect arguments" << endl;
+                            continue;
+                        }
+                        BYTE gpuStage = atoi(args[0].c_str());
+                        if (acpi->SetGPU(gpuStage) >= 0)
+                            cout << "GPU limit set to " << (int) gpuStage << endl;
+                        else
+                            cout << "GPU limit set failed!" << endl;
+                        continue;
+                    }
                     if (command == "getpower") {
                         int cpower = acpi->GetPower();
                         if (cpower >= 0)
@@ -225,17 +241,33 @@ int main(int argc, char* argv[])
                             cout << "Direct: incorrect arguments (should be 2 or 3)" << endl;
                             continue;
                         }
-                        USHORT command = atoi(args[0].c_str());
-                        byte subcommand = atoi(args[1].c_str()),
+                        USHORT command = strtol(args[0].c_str(), NULL, 16);
+                        byte subcommand = strtol(args[1].c_str(), NULL, 16),
                             value1 = 0, value2 = 0;
                         if (args.size() > 2)
-                            value1 = atoi(args[2].c_str());
+                            value1 = strtol(args[2].c_str(), NULL, 16);
                         if (args.size() > 3)
-                            value2 = atoi(args[3].c_str());
+                            value2 = strtol(args[3].c_str(), NULL, 16);
                         if ((res = acpi->RunMainCommand(command, subcommand, value1, value2)) >= 0)
                             cout << "Direct call result: " << res << endl;
                         else {
                             cout << "Direct call failed!" << endl;
+                            break;
+                        }
+                        continue;
+                    }
+                    if (command == "directgpu") {
+                        int res = 0;
+                        if (args.size() < 2) {
+                            cout << "DirectGPU: incorrect arguments (should be 2)" << endl;
+                            continue;
+                        } 
+                        USHORT command = strtol(args[0].c_str(), NULL, 16);// atoi(args[0].c_str());
+                        DWORD subcommand = strtol(args[1].c_str(), NULL, 16);// atoi(args[1].c_str());
+                        if ((res = acpi->RunGPUCommand(command, subcommand)) >= 0)
+                            cout << "DirectGPU call result: " << res << endl;
+                        else {
+                            cout << "DirectGPU call failed!" << endl;
                             break;
                         }
                         continue;

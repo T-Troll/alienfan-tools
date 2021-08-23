@@ -60,5 +60,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\x64\Release\HwAcc\HwAcc.sys" />
+    <None Include="..\..\x64\Release\HwAcc\HwAcc.sys" />
   </ItemGroup>
 </Project>

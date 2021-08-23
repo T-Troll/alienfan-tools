@@ -10,6 +10,10 @@ namespace AlienFan_SDK {
 	// AMW interface com - 3 parameters (not used, com, buffer).
 	TCHAR* mainCommand = (TCHAR*) TEXT("\\____SB_AMW1WMAX");
 
+	// GPU control interface
+	TCHAR* gpuCommand = (TCHAR*) TEXT("\\____SB_PCI0PEG0PEGPGPS_");
+	// arg0 not used, arg1 always 0x100, arg2 is command, arg3 is DWORD mask.
+
 	Control::Control() {
 
 		acc = OpenAcpiService();
@@ -50,6 +54,24 @@ namespace AlienFan_SDK {
 		}
 		return -1;
 	}
+
+	int Control::RunGPUCommand(short com, DWORD packed) {
+		if (activated && com) {
+			PACPI_EVAL_OUTPUT_BUFFER res = NULL;
+			ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
+			
+			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0);
+			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(acpiargs, 0x100);
+			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(acpiargs, com);
+			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutBuffArg(acpiargs, 4, (UCHAR*)&packed);
+			res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(gpuCommand, acpiargs);
+			if (res) {
+				return (int) res->Argument[0].Argument;
+			}
+		}
+		return -1;
+	}
+
 	bool Control::Probe() {
 		// Additional temp sensor name pattern
 		TCHAR tempNamePattern[] = TEXT("\\____SB_PCI0LPCBEC0_SEN1_STR");
@@ -172,6 +194,12 @@ namespace AlienFan_SDK {
 		for (int i = 0; pl > 0 && i < powers.size(); i++)
 			if (powers[i] == pl)
 				return i;
+		return -1;
+	}
+	int Control::SetGPU(int power) {
+		if (power >= 0 && power < 5) {
+			return RunGPUCommand(devs[aDev].setGPUPower.com, power << 4 | devs[aDev].setGPUPower.sub);
+		}
 		return -1;
 	}
 	HANDLE Control::GetHandle() {

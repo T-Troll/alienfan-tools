@@ -43,7 +43,7 @@ namespace AlienFan_SDK {
 			0x14,   4, // Temp
 			0x14, 0xb, // Get Power (value, not index!)
 			0x15,   1, // Set Power
-			   0,   0  // GPU power
+			0x13,   4  // GPU power
 		}, 
 		{ 0 }
 	};
@@ -66,6 +66,7 @@ namespace AlienFan_SDK {
 		int Unlock();
 		int SetPower(int level);
 		int GetPower();
+		int SetGPU(int power);
 		HANDLE GetHandle();
 		bool IsActivated();
 		int HowManyFans();
@@ -73,6 +74,7 @@ namespace AlienFan_SDK {
 		int HowManySensors();
 
 		int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
+		int RunGPUCommand(short com, DWORD packed);
 
 		vector<ALIENFAN_SEN_INFO> sensors;
 		vector<USHORT> fans;

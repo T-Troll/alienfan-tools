@@ -810,7 +810,7 @@ Return Value:
     TCHAR  driverLocation[MAX_PATH] = {0};
        
     hndFile = CreateFile(
-        _T("\\\\?\\GLOBALROOT\\Device\\HWACC0"), //_T("\\\\.\\HwAcc"),
+        _T("\\\\.\\HwAcc"), // _T("\\\\?\\GLOBALROOT\\Device\\HWACC0"), 
         GENERIC_READ,
         FILE_SHARE_READ,
         NULL,

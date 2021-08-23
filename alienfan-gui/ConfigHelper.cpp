@@ -103,6 +103,13 @@ void ConfigHelper::Load() {
 				NULL,
 				&lastSelectedFan,
 				(LPDWORD)&size);
+	RegGetValue(hKey1,
+				NULL,
+				TEXT("LastGPU"),
+				RRF_RT_DWORD | RRF_ZEROONFAILURE,
+				NULL,
+				&lastGPUPower,
+				(LPDWORD)&size);
 	// Now load sensor mappings...
 	unsigned vindex = 0;
 	int ret = 0;
@@ -200,6 +207,14 @@ void ConfigHelper::Save() {
 		0,
 		REG_DWORD,
 		(BYTE*)&lastSelectedFan,
+		sizeof(DWORD)
+	);
+	RegSetValueEx(
+		hKey1,
+		TEXT("LastGPU"),
+		0,
+		REG_DWORD,
+		(BYTE*)&lastGPUPower,
 		sizeof(DWORD)
 	);
 	if (tempControls.size() > 0) {
