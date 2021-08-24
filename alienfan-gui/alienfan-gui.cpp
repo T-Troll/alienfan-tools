@@ -44,38 +44,38 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    FanCurve(HWND, UINT, WPARAM, LPARAM);
 
-string UnpackDriver() {
-    // Unpack driver file, if not exist...
-    char currentPath[MAX_PATH];
-    GetModuleFileName(NULL, currentPath, MAX_PATH);
-    string name = currentPath;
-    name.resize(name.find_last_of("\\"));
-    name+= "\\HwAcc.sys";
-    HANDLE hndFile = CreateFile(
-        name.c_str(),
-        GENERIC_WRITE,
-        0,
-        NULL,
-        CREATE_NEW,
-        0,
-        NULL
-    );
-
-    if (hndFile != INVALID_HANDLE_VALUE ) {
-        // No driver file, create one...
-        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), "Driver");
-        if (driverInfo) {
-            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
-            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
-            DWORD writeBytes = SizeofResource(NULL, driverInfo);
-            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
-            UnlockResource(driverHandle);
-        }
-        CloseHandle(hndFile);
-    } else
-        return TEXT("");
-    return name;
-}
+//string UnpackDriver() {
+//    // Unpack driver file, if not exist...
+//    char currentPath[MAX_PATH];
+//    GetModuleFileName(NULL, currentPath, MAX_PATH);
+//    string name = currentPath;
+//    name.resize(name.find_last_of("\\"));
+//    name+= "\\HwAcc.sys";
+//    HANDLE hndFile = CreateFile(
+//        name.c_str(),
+//        GENERIC_WRITE,
+//        0,
+//        NULL,
+//        CREATE_NEW,
+//        0,
+//        NULL
+//    );
+//
+//    if (hndFile != INVALID_HANDLE_VALUE ) {
+//        // No driver file, create one...
+//        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), "Driver");
+//        if (driverInfo) {
+//            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
+//            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
+//            DWORD writeBytes = SizeofResource(NULL, driverInfo);
+//            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
+//            UnlockResource(driverHandle);
+//        }
+//        CloseHandle(hndFile);
+//    } else
+//        return TEXT("");
+//    return name;
+//}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -90,7 +90,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     fan_conf = new ConfigHelper();
     fan_conf->Load();
 
-    string drvName = UnpackDriver();
+    //string drvName = UnpackDriver();
 
     acpi = new AlienFan_SDK::Control();
 
@@ -139,7 +139,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
     delete acpi;
 #ifndef KERNEL_HACK
-    DeleteFile(drvName.c_str());
+    //DeleteFile(drvName.c_str());
 #endif
 
     delete fan_conf;

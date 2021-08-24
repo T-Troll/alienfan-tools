@@ -3,7 +3,6 @@
 // Used by alienfan-cli.rc
 //
 #define IDR_DRIVER1                     101
-#define IDR_DRIVER                      101
 
 // Next default values for new objects
 // 

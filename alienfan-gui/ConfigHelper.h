@@ -38,6 +38,7 @@ public:
 	~ConfigHelper();
 	temp_block* FindSensor(int);
 	fan_block* FindFanBlock(temp_block*, int);
+
 	void Load();
 	void Save();
 };

@@ -10,7 +10,6 @@
 #define IDC_MAIN_ACC                    109
 #define IDD_MAIN_VIEW                   129
 #define IDR_DRIVER1                     133
-#define IDR_DRIVER                      133
 #define IDC_COMBO_POWER                 1000
 #define IDC_TEMP_LIST                   1002
 #define IDC_FAN_LIST                    1003
@@ -19,7 +18,6 @@
 #define IDC_BUT_RESET                   1007
 #define IDC_STATIC_VERSION              1009
 #define IDC_SYSLINK_HOMEPAGE            1010
-#define IDC_SLIDER1                     1013
 #define IDC_SLIDER_GPU                  1013
 #define IDM_SETTINGS_STARTWITHWINDOWS   32776
 #define IDM_SETTINGS_STARTMINIMIZED     32779

@@ -162,9 +162,6 @@
   <ItemGroup>
     <ResourceCompile Include="alienfan-cli.rc" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\x64\Release\HwAcc\HwAcc.sys" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

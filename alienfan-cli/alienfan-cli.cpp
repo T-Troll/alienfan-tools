@@ -62,44 +62,44 @@ void Usage() {
         << "  All values in \"direct\" commands should be hex, not decimal!" << endl;
 }
 
-wstring UnpackDriver() {
-    // Unpack driver file, if not exist...
-    wchar_t currentPath[MAX_PATH];
-    GetModuleFileName(NULL, currentPath, MAX_PATH);
-    wstring name = currentPath;
-    name.resize(name.find_last_of(TEXT("\\")));
-    name+= TEXT("\\HwAcc.sys");
-    HANDLE hndFile = CreateFile(
-        name.c_str(),
-        GENERIC_WRITE,
-        0,
-        NULL,
-        CREATE_NEW,
-        0,
-        NULL
-    );
-
-    if (hndFile != INVALID_HANDLE_VALUE ) {
-        // No driver file, create one...
-        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), TEXT("Driver"));
-        if (driverInfo) {
-            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
-            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
-            DWORD writeBytes = SizeofResource(NULL, driverInfo);
-            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
-            UnlockResource(driverHandle);
-        }
-        CloseHandle(hndFile);
-    } else
-        return TEXT("");
-    return name;
-}
+//wstring UnpackDriver() {
+//    // Unpack driver file, if not exist...
+//    wchar_t currentPath[MAX_PATH];
+//    GetModuleFileName(NULL, currentPath, MAX_PATH);
+//    wstring name = currentPath;
+//    name.resize(name.find_last_of(TEXT("\\")));
+//    name+= TEXT("\\HwAcc.sys");
+//    HANDLE hndFile = CreateFile(
+//        name.c_str(),
+//        GENERIC_WRITE,
+//        0,
+//        NULL,
+//        CREATE_NEW,
+//        0,
+//        NULL
+//    );
+//
+//    if (hndFile != INVALID_HANDLE_VALUE ) {
+//        // No driver file, create one...
+//        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), TEXT("Driver"));
+//        if (driverInfo) {
+//            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
+//            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
+//            DWORD writeBytes = SizeofResource(NULL, driverInfo);
+//            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
+//            UnlockResource(driverHandle);
+//        }
+//        CloseHandle(hndFile);
+//    } else
+//        return TEXT("");
+//    return name;
+//}
 
 int main(int argc, char* argv[])
 {
     std::cout << "AlienFan-cli v0.0.11.0\n";
 
-    wstring drvName = UnpackDriver();
+    //wstring drvName = UnpackDriver();
 
     AlienFan_SDK::Control* acpi = new AlienFan_SDK::Control();
 
@@ -330,7 +330,7 @@ int main(int argc, char* argv[])
     }
     delete acpi;
 #ifndef KERNEL_HACK
-    DeleteFile(drvName.c_str());
+    //DeleteFile(drvName.c_str());
 #endif
     //cout << "Done!" << endl;
 }
