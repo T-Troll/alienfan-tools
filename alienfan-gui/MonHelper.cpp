@@ -119,8 +119,6 @@ DWORD WINAPI CMonProc(LPVOID param) {
 #endif
 					if (visible && src->fDlg && i == src->conf->lastSelectedFan) {
 						SendMessage(src->fDlg, WM_PAINT, 0, 0);
-						string rpmText = "Fan curve (boost: " + to_string(boostSets[i]) + ")";
-						SetWindowText(src->fDlg, rpmText.c_str());
 					}
 				}
 		}

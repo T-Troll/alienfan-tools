@@ -241,13 +241,13 @@ int main(int argc, char* argv[])
                             cout << "Direct: incorrect arguments (should be 2 or 3)" << endl;
                             continue;
                         }
-                        USHORT command = strtol(args[0].c_str(), NULL, 16);
-                        byte subcommand = strtol(args[1].c_str(), NULL, 16),
+                        USHORT command = (USHORT) strtol(args[0].c_str(), NULL, 16);
+                        byte subcommand = (byte) strtol(args[1].c_str(), NULL, 16),
                             value1 = 0, value2 = 0;
                         if (args.size() > 2)
-                            value1 = strtol(args[2].c_str(), NULL, 16);
+                            value1 = (byte) strtol(args[2].c_str(), NULL, 16);
                         if (args.size() > 3)
-                            value2 = strtol(args[3].c_str(), NULL, 16);
+                            value2 = (byte) strtol(args[3].c_str(), NULL, 16);
                         if ((res = acpi->RunMainCommand(command, subcommand, value1, value2)) >= 0)
                             cout << "Direct call result: " << res << endl;
                         else {
@@ -262,7 +262,7 @@ int main(int argc, char* argv[])
                             cout << "DirectGPU: incorrect arguments (should be 2)" << endl;
                             continue;
                         } 
-                        USHORT command = strtol(args[0].c_str(), NULL, 16);// atoi(args[0].c_str());
+                        USHORT command = (USHORT) strtol(args[0].c_str(), NULL, 16);// atoi(args[0].c_str());
                         DWORD subcommand = strtol(args[1].c_str(), NULL, 16);// atoi(args[1].c_str());
                         if ((res = acpi->RunGPUCommand(command, subcommand)) >= 0)
                             cout << "DirectGPU call result: " << res << endl;

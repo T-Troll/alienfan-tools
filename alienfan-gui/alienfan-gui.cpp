@@ -205,7 +205,7 @@ void ReloadFanView(HWND hDlg, int cID) {
     ListView_InsertColumn(list, 0, &lCol);
     for (int i = 0; i < acpi->HowManyFans(); i++) {
         LVITEMA lItem;
-        string name = "Fan " + to_string(i + 1);
+        string name = "Fan " + to_string(i + 1) + " (" + to_string(acpi->GetFanRPM(i)) + ")";
         lItem.mask = LVIF_TEXT | LVIF_PARAM;
         lItem.iItem = i;
         lItem.iImage = 0;
@@ -299,12 +299,9 @@ void DrawFan(int oper = 0, int xx=-1, int yy=-1)
                     int cx = fan->points[i].temp * (clirect.right - clirect.left) / 100 + clirect.left,
                         cy = (100 - fan->points[i].boost) * (clirect.bottom - clirect.top) / 100 + clirect.top;
                     LineTo(hdc, cx, cy);
-                    Ellipse(hdc, cx -2, cy-2, cx + 2, cy + 2);
+                    Ellipse(hdc, cx - 2, cy - 2, cx + 2, cy + 2);
                 }
-            }
-
-            // Red dot and RPM
-            if (fan_conf->lastSelectedSensor != -1) {
+                // Red dot and RPM
                 SetDCPenColor(hdc, RGB(255, 0, 0));
                 SetDCBrushColor(hdc, RGB(255, 0, 0));
                 SelectObject(hdc, GetStockObject(DC_PEN));
@@ -313,6 +310,8 @@ void DrawFan(int oper = 0, int xx=-1, int yy=-1)
                 mark.x = acpi->GetTempValue(fan_conf->lastSelectedSensor) * (clirect.right - clirect.left) / 100 + clirect.left;
                 mark.y = (100 - acpi->GetFanValue(fan_conf->lastSelectedFan)) * (clirect.bottom - clirect.top) / 100 + clirect.top;
                 Ellipse(hdc, mark.x - 3, mark.y - 3, mark.x + 3, mark.y + 3);
+                string rpmText = "Fan curve (boost: " + to_string(acpi->GetFanValue(fan_conf->lastSelectedFan)) + ")";
+                SetWindowText(curve, rpmText.c_str());
             }
         }
 

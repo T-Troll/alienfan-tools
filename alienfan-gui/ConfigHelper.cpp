@@ -1,5 +1,6 @@
 #include "ConfigHelper.h"
 #include "resource.h"
+#include <string>
 
 ConfigHelper::ConfigHelper() {
 	DWORD  dwDisposition;
@@ -166,7 +167,7 @@ void ConfigHelper::Load() {
 }
 
 void ConfigHelper::Save() {
-	char name[256];
+	string name;
 	DWORD dwDisposition;
 	
 	RegSetValueEx(
@@ -232,7 +233,7 @@ void ConfigHelper::Save() {
 	}
 	for (int i = 0; i < tempControls.size(); i++) {
 		for (int j = 0; j < tempControls[i].fans.size(); j++) {
-			sprintf_s(name, "Sensor-%d-%d", tempControls[i].sensorIndex,  tempControls[i].fans[j].fanIndex);
+			name = "Sensor-" + to_string(tempControls[i].sensorIndex) + "-" + to_string(tempControls[i].fans[j].fanIndex);
 			byte* outdata = new byte[tempControls[i].fans[j].points.size() * 2];
 			for (int k = 0; k < tempControls[i].fans[j].points.size(); k++) {
 				outdata[2 * k] = (byte)tempControls[i].fans[j].points[k].temp;
@@ -241,7 +242,7 @@ void ConfigHelper::Save() {
 
 			RegSetValueExA(
 				hKey2,
-				name,
+				name.c_str(),
 				0,
 				REG_BINARY,
 				(BYTE*) outdata,
