@@ -5,11 +5,11 @@
 
 class MonHelper {
 private:
-	HANDLE dwHandle;
+	HANDLE dwHandle = 0;
 public:
 	ConfigHelper* conf;
 	HWND dlg = NULL, fDlg = NULL;
-	HANDLE stopEvent;
+	HANDLE stopEvent = 0;
 	AlienFan_SDK::Control* acpi;
 
 	MonHelper(HWND, HWND, ConfigHelper*, AlienFan_SDK::Control*);

@@ -44,7 +44,6 @@ void MonHelper::Stop() {
 DWORD WINAPI CMonProc(LPVOID param) {
 	MonHelper* src = (MonHelper*) param;
 	vector<int> senValues, fanValues, boostValues, boostSets;
-	int lastBoostValue = -1;
 	senValues.resize(src->acpi->HowManySensors());
 	fanValues.resize(src->acpi->HowManyFans());
 	boostValues.resize(src->acpi->HowManyFans());
