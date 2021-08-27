@@ -46,9 +46,9 @@ ConfigHelper::~ConfigHelper() {
 temp_block* ConfigHelper::FindSensor(int id) {
 	temp_block* res = NULL;
 	if (id >= 0) {
-		for (int i = 0; i < tempControls.size(); i++)
-			if (tempControls[i].sensorIndex == id) {
-				res = &tempControls[i];
+		for (int i = 0; i < prof.fanControls.size(); i++)
+			if (prof.fanControls[i].sensorIndex == id) {
+				res = &prof.fanControls[i];
 				break;
 			}
 	}
@@ -88,7 +88,7 @@ void ConfigHelper::Load() {
 				TEXT("LastPowerStage"),
 				RRF_RT_DWORD | RRF_ZEROONFAILURE,
 				NULL,
-				&lastPowerStage,
+				&prof.powerStage,
 				(LPDWORD)&size);
 	RegGetValue(hKey1,
 				NULL,
@@ -109,7 +109,7 @@ void ConfigHelper::Load() {
 				TEXT("LastGPU"),
 				RRF_RT_DWORD | RRF_ZEROONFAILURE,
 				NULL,
-				&lastGPUPower,
+				&prof.GPUPower,
 				(LPDWORD)&size);
 	// Now load sensor mappings...
 	unsigned vindex = 0;
@@ -134,9 +134,9 @@ void ConfigHelper::Load() {
 				temp_block* cSensor = FindSensor(sid);
 				if (!cSensor) { // Need to add new sensor block
 					cSensor = new temp_block{sid};
-					tempControls.push_back(*cSensor);
+					prof.fanControls.push_back(*cSensor);
 					delete cSensor;
-					cSensor = &tempControls.back();
+					cSensor = &prof.fanControls.back();
 				}
 				// Now load and add fan data..
 				byte* inarray = new byte[lend];
@@ -191,7 +191,7 @@ void ConfigHelper::Save() {
 		TEXT("LastPowerStage"),
 		0,
 		REG_DWORD,
-		(BYTE*)&lastPowerStage,
+		(BYTE*)&prof.powerStage,
 		sizeof(DWORD)
 	);
 	RegSetValueEx(
@@ -215,10 +215,10 @@ void ConfigHelper::Save() {
 		TEXT("LastGPU"),
 		0,
 		REG_DWORD,
-		(BYTE*)&lastGPUPower,
+		(BYTE*)&prof.GPUPower,
 		sizeof(DWORD)
 	);
-	if (tempControls.size() > 0) {
+	if (prof.fanControls.size() > 0) {
 		RegCloseKey(hKey2);
 		RegDeleteTreeA(hKey1, "Sensors");
 		RegCreateKeyEx(HKEY_CURRENT_USER,
@@ -231,13 +231,13 @@ void ConfigHelper::Save() {
 					   &hKey2,
 					   &dwDisposition);
 	}
-	for (int i = 0; i < tempControls.size(); i++) {
-		for (int j = 0; j < tempControls[i].fans.size(); j++) {
-			name = "Sensor-" + to_string(tempControls[i].sensorIndex) + "-" + to_string(tempControls[i].fans[j].fanIndex);
-			byte* outdata = new byte[tempControls[i].fans[j].points.size() * 2];
-			for (int k = 0; k < tempControls[i].fans[j].points.size(); k++) {
-				outdata[2 * k] = (byte)tempControls[i].fans[j].points[k].temp;
-				outdata[(2 * k)+1] = (byte)tempControls[i].fans[j].points[k].boost;
+	for (int i = 0; i < prof.fanControls.size(); i++) {
+		for (int j = 0; j < prof.fanControls[i].fans.size(); j++) {
+			name = "Sensor-" + to_string(prof.fanControls[i].sensorIndex) + "-" + to_string(prof.fanControls[i].fans[j].fanIndex);
+			byte* outdata = new byte[prof.fanControls[i].fans[j].points.size() * 2];
+			for (int k = 0; k < prof.fanControls[i].fans[j].points.size(); k++) {
+				outdata[2 * k] = (byte)prof.fanControls[i].fans[j].points[k].temp;
+				outdata[(2 * k)+1] = (byte)prof.fanControls[i].fans[j].points[k].boost;
 			}
 
 			RegSetValueExA(
@@ -246,9 +246,10 @@ void ConfigHelper::Save() {
 				0,
 				REG_BINARY,
 				(BYTE*) outdata,
-				(DWORD) tempControls[i].fans[j].points.size() * 2
+				(DWORD) prof.fanControls[i].fans[j].points.size() * 2
 			);
 			delete[] outdata;
 		}
 	}
 }
+

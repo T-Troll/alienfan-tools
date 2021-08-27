@@ -106,10 +106,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         if (fan_conf->startMinimized)
             SendMessage(mDlg, WM_SIZE, SIZE_MINIMIZED, 0);
 
-        if (fan_conf->lastPowerStage >= 0)
-            acpi->SetPower(fan_conf->lastPowerStage);
-        if (fan_conf->lastGPUPower >= 0)
-            acpi->SetGPU(fan_conf->lastGPUPower);
+        if (fan_conf->prof.powerStage >= 0)
+            acpi->SetPower(fan_conf->prof.powerStage);
+        if (fan_conf->prof.GPUPower >= 0)
+            acpi->SetGPU(fan_conf->prof.GPUPower);
 
         mon = new MonHelper(mDlg, fanWindow, fan_conf, acpi);
 
@@ -212,8 +212,6 @@ void DrawFan(int oper = 0, int xx=-1, int yy=-1)
         RECT clirect, graphZone;
         GetClientRect(curve, &clirect);
         graphZone = clirect;
-        //clirect.left += 1;
-        //clirect.top += 1;
         clirect.right -= 1;
         clirect.bottom -= 1;
 
@@ -441,7 +439,7 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         Shell_NotifyIcon(NIM_ADD, &fan_conf->niData);
         CreateThread(NULL, 0, CUpdateCheck, &fan_conf->niData, 0, NULL);
 
-        ReloadPowerList(hDlg, fan_conf->lastPowerStage);
+        ReloadPowerList(hDlg, fan_conf->prof.powerStage);
         ReloadTempView(hDlg, fan_conf->lastSelectedSensor);
         ReloadFanView(hDlg, fan_conf->lastSelectedFan);
 
@@ -465,7 +463,7 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
         SendMessage(power_gpu, TBM_SETRANGE, true, MAKELPARAM(0, 4));
         SendMessage(power_gpu, TBM_SETTICFREQ, 1, 0);
-        SendMessage(power_gpu, TBM_SETPOS, true, fan_conf->lastGPUPower);
+        SendMessage(power_gpu, TBM_SETPOS, true, fan_conf->prof.GPUPower);
 
         return true; 
     } break;
@@ -481,7 +479,7 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 switch (HIWORD(wParam))
                 {
                 case CBN_SELCHANGE: {
-                    fan_conf->lastPowerStage = pid;
+                    fan_conf->prof.powerStage = pid;
                     acpi->SetPower(pid);
                     fan_conf->Save();
                 } break;
@@ -597,9 +595,9 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                         if (!sen) { // add new sensor block
                             sen = new temp_block;
                             sen->sensorIndex = (short)fan_conf->lastSelectedSensor;
-                            fan_conf->tempControls.push_back(*sen);
+                            fan_conf->prof.fanControls.push_back(*sen);
                             delete sen;
-                            sen = &fan_conf->tempControls.back();
+                            sen = &fan_conf->prof.fanControls.back();
                         }
                         fan_block cFan = {(short)lPoint->iItem};
                         cFan.points.push_back({0,0});
@@ -619,10 +617,10 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                                     break;
                                 }
                             if (!sen->fans.size()) // remove sensor block!
-                                for (vector<temp_block>::iterator iSen = fan_conf->tempControls.begin();
-                                     iSen < fan_conf->tempControls.end(); iSen++)
+                                for (vector<temp_block>::iterator iSen = fan_conf->prof.fanControls.begin();
+                                     iSen < fan_conf->prof.fanControls.end(); iSen++)
                                     if (iSen->sensorIndex == sen->sensorIndex) {
-                                        fan_conf->tempControls.erase(iSen);
+                                        fan_conf->prof.fanControls.erase(iSen);
                                         break;
                                     }
                         }
@@ -656,8 +654,8 @@ LRESULT CALLBACK WndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         switch (LOWORD(wParam)) {
         case TB_THUMBPOSITION: case TB_ENDTRACK: {
             if ((HWND)lParam == power_gpu) {
-                fan_conf->lastGPUPower = (DWORD)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
-                acpi->SetGPU(fan_conf->lastGPUPower);
+                fan_conf->prof.GPUPower = (DWORD)SendMessage((HWND)lParam, TBM_GETPOS, 0, 0);
+                acpi->SetGPU(fan_conf->prof.GPUPower);
             }
          } break;
         } break;
