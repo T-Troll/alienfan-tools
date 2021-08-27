@@ -192,41 +192,6 @@ HWND CreateToolTip(HWND hwndParent, HWND oldTip)
     return hwndTT;
 }
 
-void ReloadFanView(HWND hDlg, int cID) {
-    temp_block* sen = fan_conf->FindSensor(fan_conf->lastSelectedSensor);
-    HWND list = GetDlgItem(hDlg, IDC_FAN_LIST);
-    ListView_DeleteAllItems(list);
-    ListView_SetExtendedListViewStyle(list, LVS_EX_CHECKBOXES /*| LVS_EX_AUTOSIZECOLUMNS*/ | LVS_EX_FULLROWSELECT);
-    LVCOLUMNA lCol;
-    lCol.mask = LVCF_WIDTH;
-    lCol.cx = 100;
-    lCol.iSubItem = 0;
-    ListView_DeleteColumn(list, 0);
-    ListView_InsertColumn(list, 0, &lCol);
-    for (int i = 0; i < acpi->HowManyFans(); i++) {
-        LVITEMA lItem;
-        string name = "Fan " + to_string(i + 1) + " (" + to_string(acpi->GetFanRPM(i)) + ")";
-        lItem.mask = LVIF_TEXT | LVIF_PARAM;
-        lItem.iItem = i;
-        lItem.iImage = 0;
-        lItem.iSubItem = 0;
-        lItem.lParam = i;
-        lItem.pszText = (LPSTR) name.c_str();
-        if (i == cID) {
-            lItem.mask |= LVIF_STATE;
-            lItem.state = LVIS_SELECTED;
-        }
-        ListView_InsertItem(list, &lItem);
-        if (sen && fan_conf->FindFanBlock(sen, i)) {
-            fan_conf->lastSelectedSensor = -1;
-            ListView_SetCheckState(list, i, true);
-            fan_conf->lastSelectedSensor = sen->sensorIndex;
-        }
-    }
-
-    ListView_SetColumnWidth(list, 0, LVSCW_AUTOSIZE_USEHEADER);
-}
-
 void SetTooltip(HWND tt, int x, int y) {
     TOOLINFO ti = { 0 };
     ti.cbSize = sizeof(ti);
@@ -326,6 +291,43 @@ void DrawFan(int oper = 0, int xx=-1, int yy=-1)
         DeleteDC(hdc_r);
     }
 } 
+
+void ReloadFanView(HWND hDlg, int cID) {
+    temp_block* sen = fan_conf->FindSensor(fan_conf->lastSelectedSensor);
+    HWND list = GetDlgItem(hDlg, IDC_FAN_LIST);
+    ListView_DeleteAllItems(list);
+    ListView_SetExtendedListViewStyle(list, LVS_EX_CHECKBOXES /*| LVS_EX_AUTOSIZECOLUMNS*/ | LVS_EX_FULLROWSELECT);
+    LVCOLUMNA lCol;
+    lCol.mask = LVCF_WIDTH;
+    lCol.cx = 100;
+    lCol.iSubItem = 0;
+    ListView_DeleteColumn(list, 0);
+    ListView_InsertColumn(list, 0, &lCol);
+    for (int i = 0; i < acpi->HowManyFans(); i++) {
+        LVITEMA lItem;
+        string name = "Fan " + to_string(i + 1) + " (" + to_string(acpi->GetFanRPM(i)) + ")";
+        lItem.mask = LVIF_TEXT | LVIF_PARAM;
+        lItem.iItem = i;
+        lItem.iImage = 0;
+        lItem.iSubItem = 0;
+        lItem.lParam = i;
+        lItem.pszText = (LPSTR) name.c_str();
+        if (i == cID) {
+            lItem.mask |= LVIF_STATE;
+            lItem.state = LVIS_SELECTED;
+            DrawFan();
+        }
+        ListView_InsertItem(list, &lItem);
+        if (sen && fan_conf->FindFanBlock(sen, i)) {
+            fan_conf->lastSelectedSensor = -1;
+            ListView_SetCheckState(list, i, true);
+            fan_conf->lastSelectedSensor = sen->sensorIndex;
+        }
+    }
+
+    ListView_SetColumnWidth(list, 0, LVSCW_AUTOSIZE_USEHEADER);
+}
+
 
 void ReloadPowerList(HWND hDlg, int id) {
     HWND list = GetDlgItem(hDlg, IDC_COMBO_POWER);
