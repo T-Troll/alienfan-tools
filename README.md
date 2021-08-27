@@ -27,7 +27,7 @@ For my gear 0 = 60W unlocked, 1 - 60W, 2 - 75W, 3 - 45W with gpu boost, 4 - 45W.
 
 ## Installation
 Unpack tools into folder, run exe.  
-NB: You should have acpilib.dll and hwacc.sys into the same folder.
+NB: You should have hwacc.sys into the same folder.
 
 ## Supported hardware
 - Notebooks: `Alienware m15/17R1` or later.
