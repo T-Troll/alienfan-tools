@@ -56,8 +56,8 @@ DWORD WINAPI CMonProc(LPVOID param) {
 		// update values.....
 		bool visible = IsWindowVisible(src->dlg);// IsIconic(src->dlg);
 
-		if (src->acpi->GetPower() != src->conf->prof.powerStage)
-			src->acpi->SetPower(src->conf->prof.powerStage);
+		if (src->acpi->GetPower() != src->conf->lastProf->powerStage)
+			src->acpi->SetPower(src->conf->lastProf->powerStage);
 
 		// temps..
 		for (int i = 0; i < src->acpi->HowManySensors(); i++) {
@@ -87,10 +87,10 @@ DWORD WINAPI CMonProc(LPVOID param) {
 		}
 
 		// boosts..
-		if (!src->conf->prof.powerStage) {
+		if (!src->conf->lastProf->powerStage) {
 			// in manual mode, can set...
-			for (int i = 0; i < src->conf->prof.fanControls.size(); i++) {
-				temp_block* sen = &src->conf->prof.fanControls[i];
+			for (int i = 0; i < src->conf->lastProf->fanControls.size(); i++) {
+				temp_block* sen = &src->conf->lastProf->fanControls[i];
 				for (int j = 0; j < sen->fans.size(); j++) {
 					fan_block* fan = &sen->fans[j];
 					// Look for boost point for temp...

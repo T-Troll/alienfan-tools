@@ -37,6 +37,7 @@ public:
 	DWORD startWithWindows = 0;
 	DWORD startMinimized = 0;
 	//vector<temp_block> tempControls;
+	fan_profile* lastProf;
 	fan_profile prof;
 
 	NOTIFYICONDATA niData = {0};

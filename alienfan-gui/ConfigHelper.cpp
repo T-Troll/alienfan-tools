@@ -46,9 +46,9 @@ ConfigHelper::~ConfigHelper() {
 temp_block* ConfigHelper::FindSensor(int id) {
 	temp_block* res = NULL;
 	if (id >= 0) {
-		for (int i = 0; i < prof.fanControls.size(); i++)
-			if (prof.fanControls[i].sensorIndex == id) {
-				res = &prof.fanControls[i];
+		for (int i = 0; i < lastProf->fanControls.size(); i++)
+			if (lastProf->fanControls[i].sensorIndex == id) {
+				res = &lastProf->fanControls[i];
 				break;
 			}
 	}
@@ -115,6 +115,7 @@ void ConfigHelper::Load() {
 	unsigned vindex = 0;
 	int ret = 0;
 	char name[256];
+	lastProf = &prof;
 	do {
 		DWORD len = 255, lend = 0;
 		ret = RegEnumValueA(
