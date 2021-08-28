@@ -360,7 +360,7 @@ void ReloadTempView(HWND hDlg, int cID) {
     ListView_InsertColumn(list, 1, &lCol);
     for (int i = 0; i < acpi->HowManySensors(); i++) {
         LVITEMA lItem;
-        string name = "100";
+        string name = to_string(acpi->GetTempValue(i));
         lItem.mask = LVIF_TEXT | LVIF_PARAM;
         lItem.iItem = i;
         lItem.iImage = 0;

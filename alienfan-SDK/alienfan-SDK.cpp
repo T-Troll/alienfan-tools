@@ -107,9 +107,9 @@ namespace AlienFan_SDK {
 						cur.isFromAWC = true;
 						switch (i) {
 						case 0:
-							cur.name = "CPU Internal Thermister"; break;
+							cur.name = "CPU Internal Thermistor"; break;
 						case 1:
-							cur.name = "GPU Internal Thermister"; break;
+							cur.name = "GPU Internal Thermistor"; break;
 						default:
 							cur.name = "FAN#" + to_string(i) + " sensor"; break;
 						}
