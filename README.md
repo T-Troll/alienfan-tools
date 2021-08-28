@@ -30,8 +30,18 @@ Unpack tools into folder, run exe.
 NB: You should have hwacc.sys into the same folder.
 
 ## Supported hardware
-- Notebooks: `Alienware m15/17R1` or later.
+- Notebooks: `Alienware m15/17R1` or later, `Alienware Area51m-R1` or later.
 - Desktops: <s>`Alienware Aurora R7` or later (with issues, need more testing).</s> Sorry, not supported now (different function mapping).
+
+### Tested gear:
+- `Alienware m15R1`: 
+  - 5 power modes (unlocked 60W, 60W, 75W, 45W with 65W GPU lock, 45W with 90W GPU lock)
+  - 4 GPU modes (90W...65W limit)
+  - 7 temperature sensors
+- `Alienware m15R4`:
+  - 5 power modes (unlocked 45W, 105W(!), 105W, 105W, 45W)
+  - 4 GPU modes... But do nothing, just return "OK"
+  - 7 Temperature sensors
 
 ## `alienfan-gui` usage
 
@@ -110,7 +120,7 @@ NB: for both `direct` commands, all values are not decimal, but hex (like c8, a3
 - [ ] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
   - [x] Alienware m15/m17 (any release)
   - [ ] Older Alienware (need to repair my old one to check)
-  - [ ] Area 51 (need ACPI dump from it)
+  - [x] Area 51 (need ACPI dump from it)
   - [ ] Desktops (work in progress)
 - [x] SDK lib for easy sharing
 - [x] Driver file embedding into app
