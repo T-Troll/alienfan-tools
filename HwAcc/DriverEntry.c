@@ -19,7 +19,16 @@ Environment:
 
 --*/
 
-#include <ntddk.h>          // various NT definitions
+#ifndef _KERNEL_MODE
+// This is a user-mode driver
+#include <windows.h>
+#include <wdf.h>
+#else
+// This is a kernel-mode driver
+#include <ntddk.h>
+#define NTSTRSAFE_LIB
+#include <ntstrsafe.h>
+#endif
 #include <stdio.h>
 #include "def.h"
 #include "access.h"
@@ -27,11 +36,16 @@ Environment:
 #define NT_DEVICE_NAME      L"\\Device\\HWACC0"
 #define DOS_DEVICE_NAME     L"\\DosDevices\\HwAcc"
 
+#ifdef KERNEL_HACK
 DRIVER_INITIALIZE DriverInit;
+#endif
 DRIVER_INITIALIZE DriverEntry;
+#ifndef _KERNEL_MODE
+#else
 DRIVER_DISPATCH CreateClose;
 DRIVER_DISPATCH DeviceControl;
 DRIVER_UNLOAD UnloadDriver;
+#endif
 
 #ifdef ALLOC_PRAGMA
 #ifdef KERNEL_HACK
@@ -333,8 +347,8 @@ Return Value:
 
 	PIO_STACK_LOCATION  pIrpStack;// Pointer to current stack location
 	NTSTATUS            Status = STATUS_SUCCESS;// Assume success
-	ULONG               inBufLength; // Input buffer length
-	ULONG               outBufLength; // Output buffer length
+	//ULONG               inBufLength; // Input buffer length
+	//ULONG               outBufLength; // Output buffer length
 	//PCHAR               inBuf, outBuf; // pointer to Input and output buffer
 	//PCHAR               data = "This String is from Device Driver !!!";
 	//ULONG               datalen = strlen(data) + 1;//Length of data including null
@@ -353,8 +367,8 @@ Return Value:
 	}
 
 	pLDI = (PLOCAL_DEVICE_INFO)DeviceObject->DeviceExtension;    // Get local info struct
-	inBufLength = pIrpStack->Parameters.DeviceIoControl.InputBufferLength;
-	outBufLength = pIrpStack->Parameters.DeviceIoControl.OutputBufferLength;
+	//inBufLength = pIrpStack->Parameters.DeviceIoControl.InputBufferLength;
+	//outBufLength = pIrpStack->Parameters.DeviceIoControl.OutputBufferLength;
 	switch (pIrpStack->Parameters.DeviceIoControl.IoControlCode)
 	{
 	case IOCTL_GPD_OPEN_ACPI:
@@ -386,7 +400,7 @@ Return Value:
 		Status = STATUS_INVALID_PARAMETER;
 	}
 
-#ifdef DBG
+#ifdef _DEBUG
 	if (!NT_SUCCESS(Status))
 		DebugPrint(("HWACC: Control operation failed (more data?)\n"));
 #endif

@@ -101,7 +101,7 @@ DWORD WINAPI CMonProc(LPVOID param) {
 								(senValues[sen->sensorIndex] - fan->points[k - 1].temp) /
 								(fan->points[k].temp - fan->points[k - 1].temp);
 							tBoost = tBoost < 0 ? 0 : tBoost > 100 ? 100 : tBoost;
-							if (tBoost > boostSets[fan->fanIndex])
+							if (fan->fanIndex < boostSets.size() && tBoost > boostSets[fan->fanIndex])
 								boostSets[fan->fanIndex] = tBoost;
 							break;
 						}
@@ -112,10 +112,10 @@ DWORD WINAPI CMonProc(LPVOID param) {
 			for (int i = 0; i < src->acpi->HowManyFans(); i++)
 				if (boostSets[i] != boostValues[i]) {
 					src->acpi->SetFanValue(i, boostSets[i]);
-#ifdef _DEBUG
-					string msg = "Boost for fan#" + to_string(i) + " changed to " + to_string(boostSets[i]) + "\n";
-					OutputDebugString(msg.c_str());
-#endif
+//#ifdef _DEBUG
+//					string msg = "Boost for fan#" + to_string(i) + " changed to " + to_string(boostSets[i]) + "\n";
+//					OutputDebugString(msg.c_str());
+//#endif
 					if (visible && src->fDlg && i == src->conf->lastSelectedFan) {
 						SendMessage(src->fDlg, WM_PAINT, 0, 0);
 					}

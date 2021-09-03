@@ -1,6 +1,6 @@
 // alienfan-tools.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
-
+#define WIN32_LEAN_AND_MEAN
 #include <iostream>
 #include <vector>
 #include "alienfan-SDK.h"

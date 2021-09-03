@@ -18,8 +18,17 @@ Environment:
 	Kernel mode only.
 
 --*/
-#define DBG 1
-#include <ntddk.h>          // various NT definitions
+
+#ifndef _KERNEL_MODE
+// This is a user-mode driver
+#include <windows.h>
+#include <wdf.h>
+#else
+// This is a kernel-mode driver
+#include <ntddk.h>
+#define NTSTRSAFE_LIB
+#include <ntstrsafe.h>
+#endif
 #include <string.h>
 #include <Acpiioct.h>   
 #include "def.h"
@@ -884,6 +893,8 @@ Return Value:
 	pInputBuffer->MethodName[2] = puNameSeg[2];
 	pInputBuffer->MethodName[3] = puNameSeg[3];
 	pInputBuffer->Size = pInputBuffer->Size - (ULONG)COMPLEX_SIZE_ADJ;
+
+	//UNREFERENCED_PARAMETER(pParent);
 	GET_ACPI_OBJS_ROOT(pAcpiRoot);
 	if (pAcpiRoot != NULL) {
 		SET_ACPI_OBJS_ROOT(pParent);
@@ -937,7 +948,9 @@ Return Value:
 	ACPI_OBJ	*pAcpiRoot;
 	
 	ULONG nSize = pInputBuffer->Size;
-	pInputBuffer->Signature = ACPI_EVAL_INPUT_BUFFER_COMPLEX_SIGNATURE_EX;	
+	pInputBuffer->Signature = ACPI_EVAL_INPUT_BUFFER_COMPLEX_SIGNATURE_EX;
+
+	//UNREFERENCED_PARAMETER(pParent);
 	GET_ACPI_OBJS_ROOT(pAcpiRoot);
 	if (pAcpiRoot != NULL) {
 		SET_ACPI_OBJS_ROOT(pParent);

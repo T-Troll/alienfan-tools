@@ -4,14 +4,16 @@
     <SignMode>TestSign</SignMode>
     <TestCertificate>CN="WDKTestCert Roman,132739987527267685" | E20621506777199AF9A8D418F013AFEE0437A7AE</TestCertificate>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <UmdfVEnabled>false</UmdfVEnabled>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TestCertificate>CN=HwAcc | AF76BB4B793A0C9F924E0633733E90148B2C6118</TestCertificate>
+    <TestCertificate>CN="WDKTestCert Roman,132751800468196934" | 0A757187AB577ECA98C0CD34EA0AEA2344FC678D</TestCertificate>
     <SignMode>TestSign</SignMode>
     <ProductionCertificate>
     </ProductionCertificate>
+    <UmdfVEnabled>false</UmdfVEnabled>
   </PropertyGroup>
 </Project>

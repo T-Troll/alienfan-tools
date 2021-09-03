@@ -6,6 +6,8 @@
 
 using namespace std;
 
+#define byte BYTE
+
 namespace AlienFan_SDK {
 
 	struct ALIENFAN_SEN_INFO {
