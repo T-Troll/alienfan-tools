@@ -281,10 +281,10 @@ Return Value:
 
 	PDEVICE_OBJECT deviceObject = DriverObject->DeviceObject;
 	UNICODE_STRING uniWin32NameString;
-	PLOCAL_DEVICE_INFO  pLDI;
 
 	PAGED_CODE();
-
+#ifndef _TINY_DRIVER_
+	PLOCAL_DEVICE_INFO  pLDI;
 	pLDI = (PLOCAL_DEVICE_INFO)deviceObject->DeviceExtension;    // Get local info struct
 
 	if (pLDI->pSetupAml != NULL) {
@@ -292,7 +292,7 @@ Return Value:
 		ExFreePoolWithTag(pLDI->pSetupAml, MYNT_TAG);
 		pLDI->pSetupAml = NULL;
 	}
-
+#endif
 
 	//
 	// Create counted string version of our Win32 device name.
@@ -375,6 +375,13 @@ Return Value:
 		//pDevObj = IoGetLowerDeviceObject (DeviceObject);
 		Status = OpenAcpiDevice(pLDI, pIrp);
 		break;
+	case IOCTL_GPD_EVAL_ACPI_WITHOUT_DIRECT:
+	    Status = EvalAcpiWithoutInputDirect(pLDI, pIrp, pIrpStack);
+	    break;
+	case IOCTL_GPD_EVAL_ACPI_WITH_DIRECT:
+	    Status = EvalAcpiWithInputDirect(pLDI, pIrp, pIrpStack);
+	    break;
+#ifndef _TINY_DRIVER_
 	case IOCTL_GPD_ENUM_ACPI:
 		Status = BuildUserAcpiObjects(pLDI, pIrp, pIrpStack);
 		break;
@@ -396,6 +403,7 @@ Return Value:
 	case IOCTL_GPD_UNLOAD_AML:
 		Status = RemoveAmlForNotify(pLDI, pIrp, pIrpStack);
 		break;
+#endif
 	default:
 		Status = STATUS_INVALID_PARAMETER;
 	}

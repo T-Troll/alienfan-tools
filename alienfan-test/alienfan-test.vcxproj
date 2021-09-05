@@ -145,9 +145,6 @@
     <ProjectReference Include="..\alienfan-low\alienfan-low.vcxproj">
       <Project>{cc889c0d-369a-46f0-87b2-956da96ddefd}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\HwAccU\HwAccU.vcxproj">
-      <Project>{806c6559-5c0e-4e2d-884b-aded23496f6f}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

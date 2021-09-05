@@ -2,7 +2,7 @@
 //
 
 #include "alienfan-SDK.h"
-#include "acpilib.h"
+#include "alienfan-low.h"
 
 namespace AlienFan_SDK {
 
@@ -16,39 +16,49 @@ namespace AlienFan_SDK {
 
 	Control::Control() {
 
-		acc = OpenAcpiService();
-		switch ((LONG_PTR)acc) {
-		case -1:
-			return;
-		case 0:
-			wrongEnvironment = true;
-			return;
-		default:
-			activated = QueryAcpiNSInLib();
-		}
+		TCHAR  driverLocation[MAX_PATH] = {0};
+		if (GetServiceName(driverLocation, MAX_PATH)) {
+			scManager = OpenSCManager(
+				NULL,                   // local machine
+				NULL,                   // local database
+				SC_MANAGER_ALL_ACCESS   // access required
+			);
+			InstallService(scManager, driverLocation);
+			if (DemandService(scManager)) {
+				activated = (acc = OpenAcpiDevice()) != INVALID_HANDLE_VALUE;
+			}
+			else wrongEnvironment = true;
+		} else wrongEnvironment = true;
 	}
 	Control::~Control() {
 		sensors.clear();
-		CloseDll();
+			fans.clear();
+			powers.clear();
+			CloseAcpiDevice(acc);
+			UnloadService();
 	}
 
 	void Control::UnloadService() {
-		if (acc != INVALID_HANDLE_VALUE && acc)
-			CloseAcpiService(acc);
+		if (acc != INVALID_HANDLE_VALUE && acc) {
+			StopService(scManager);
+			RemoveService(scManager);
+			CloseServiceHandle(scManager);
+		}
 		acc = NULL;
 	}
 
 	int Control::RunMainCommand(short com, byte sub, byte value1, byte value2) {
 		if (activated && com) {
 			PACPI_EVAL_OUTPUT_BUFFER res = NULL;
-			ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
+			PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX acpiargs;
 			BYTE operand[4] = {sub, value1, value2, 0};
 			//UINT operand = ((UINT) arg2) << 16 | (UINT) arg1 << 8 | sub;
-			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0);
-			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(acpiargs, com);
-			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutBuffArg(acpiargs, 4, operand);
-			res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(mainCommand, acpiargs);
-			if (res) {
+			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(NULL, 0);
+			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(acpiargs, com);
+			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutBuffArg(acpiargs, 4, operand);
+			//res = (ACPI_EVAL_OUTPUT_BUFFER *) EvalAcpiMethodArgs(acc, "\\_SB.AMW1.WMAX", acpiargs, (PVOID*)&res);
+		    //EvalAcpiNSArgOutput(mainCommand, acpiargs);
+			if (EvalAcpiMethodArgs(acc, "\\_SB.AMW1.WMAX", acpiargs, (PVOID *) &res)) {
 				return (int) res->Argument[0].Argument;
 			}
 		}
@@ -58,14 +68,14 @@ namespace AlienFan_SDK {
 	int Control::RunGPUCommand(short com, DWORD packed) {
 		if (activated && com) {
 			PACPI_EVAL_OUTPUT_BUFFER res = NULL;
-			ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
+			PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX acpiargs;
 			
-			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0);
-			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(acpiargs, 0x100);
-			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(acpiargs, com);
-			acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutBuffArg(acpiargs, 4, (UCHAR*)&packed);
-			res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(gpuCommand, acpiargs);
-			if (res) {
+			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(NULL, 0);
+			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(acpiargs, 0x100);
+			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(acpiargs, com);
+			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutBuffArg(acpiargs, 4, (UCHAR*)&packed);
+			//res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(gpuCommand, acpiargs);
+			if (EvalAcpiMethodArgs(acc, "\\_SB.PCI0.PEG0.PEGP.GPS", acpiargs, (PVOID *) &res)) {
 				return (int) res->Argument[0].Argument;
 			}
 		}
@@ -74,14 +84,13 @@ namespace AlienFan_SDK {
 
 	bool Control::Probe() {
 		// Additional temp sensor name pattern
-		TCHAR tempNamePattern[] = TEXT("\\____SB_PCI0LPCBEC0_SEN1_STR");
+		char tempNamePattern[] = "\\_SB.PCI0.LPCB.EC0.SEN1._STR";//TEXT("\\____SB_PCI0LPCBEC0_SEN1_STR");
 		if (activated) {
 			PACPI_EVAL_OUTPUT_BUFFER resName = NULL;
-			USHORT nsType = GetNSType(mainCommand);
-			if (nsType == ACPI_TYPE_METHOD) {
+			aDev = 0;
+			if (RunMainCommand(devs[aDev].getFanID.com, devs[aDev].getFanID.sub, 0x32) == 1) {
 				// Alienware device detected!
 				// ToDo: Now check device type
-				aDev = 0;
 				sensors.clear();
 				fans.clear();
 				powers.clear();
@@ -117,11 +126,12 @@ namespace AlienFan_SDK {
 					}
 				}
 				for (int i = 0; i < 10; i++) {
-					tempNamePattern[23] = i + '0';
-					nsType = GetNSType(tempNamePattern);
-					if (nsType != -1) {
+					tempNamePattern[22] = i + '0';
+					//nsType = GetNSType(tempNamePattern);
+					//if (nsType != -1) {
 						// Key found!
-						if (resName = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(tempNamePattern, (USHORT*)&nsType)) {
+						if (EvalAcpiMethod(acc, tempNamePattern, (PVOID*)&resName)) {
+							//resName = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(tempNamePattern, (USHORT*)&nsType)) {
 							char* c_name = new char[1 + resName->Argument[0].DataLength];
 							wcstombs_s(NULL, c_name, resName->Argument[0].DataLength, (TCHAR*) resName->Argument[0].Data, resName->Argument[0].DataLength);
 							string senName = c_name;
@@ -132,7 +142,7 @@ namespace AlienFan_SDK {
 							sensors.push_back(cur);
 							//cout << "Sensor #" << i << ", Name: " << senName << endl;
 						}
-					}
+					//}
 				}
 				return true;
 			}
@@ -166,16 +176,16 @@ namespace AlienFan_SDK {
 	}
 	int Control::GetTempValue(int TempID) {
 		// Additional temp sensor value pattern
-		TCHAR tempValuePattern[] = TEXT("\\____SB_PCI0LPCBEC0_SEN1_TMP");
+		char tempValuePattern[] = "\\_SB.PCI0.LPCB.EC0.SEN1._TMP"; //TEXT("\\____SB_PCI0LPCBEC0_SEN1_TMP");
 		if (TempID < sensors.size()) {
 			if (sensors[TempID].isFromAWC)
 				return RunMainCommand(devs[aDev].getTemp.com, devs[aDev].getTemp.sub, (byte) sensors[TempID].senIndex);
 			else {
 				PACPI_EVAL_OUTPUT_BUFFER res = NULL;
-				tempValuePattern[23] = sensors[TempID].senIndex + '0';
-				USHORT nsType = GetNSType(tempValuePattern);
-				res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(tempValuePattern, &nsType);
-				if (res)
+				tempValuePattern[22] = sensors[TempID].senIndex + '0';
+				//USHORT nsType = GetNSType(tempValuePattern);
+				//res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(tempValuePattern, &nsType);
+				if (EvalAcpiMethod(acc, tempValuePattern, (PVOID*)&res))
 					return (res->Argument[0].Argument - 0xaac) / 0xa;
 			}
 		}

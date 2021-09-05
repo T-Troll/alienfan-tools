@@ -35,7 +35,7 @@ void MonHelper::Stop() {
 		OutputDebugString("Mon thread stop.\n");
 #endif
 		SetEvent(stopEvent);
-		WaitForSingleObject(dwHandle, 1000);
+		WaitForSingleObject(dwHandle, 1500);
 		CloseHandle(dwHandle);
 		dwHandle = 0;
 	}

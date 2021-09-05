@@ -110,6 +110,95 @@ Return Value:
 }
 
 NTSTATUS
+OpenAcpiDevice(
+	__in PLOCAL_DEVICE_INFO pLDI,
+	__in PIRP pIrp
+	)
+/*++
+
+Routine Description:
+	This routine processes the IOCTLs which read from the ports.
+
+Arguments:
+
+	pLDI        - our local device data
+	pIrp        - IO request packet
+	IrpStack    - The current stack location
+	IoctlCode   - The ioctl code from the IRP
+
+Return Value:
+	STATUS_SUCCESS           -- OK
+
+	STATUS_INVALID_PARAMETER -- The buffer sent to the driver
+								was too small to contain the
+								port, or the buffer which
+								would be sent back to the driver
+								was not a multiple of the data size.
+
+	STATUS_ACCESS_VIOLATION  -- An illegal port number was given.
+
+--*/
+
+{
+	ANSI_STRING     pDevicePath;
+	UNICODE_STRING  ulDevicePath;
+	NTSTATUS        ntStatus;
+	ACPI_NAME       *pInput;
+	UINT            AcpiDeviceExtension;
+	
+	PAGED_CODE();
+
+	// Size of buffer containing data from application
+
+	pInput = (ACPI_NAME *)pIrp->AssociatedIrp.SystemBuffer;
+
+	RtlInitAnsiString(&pDevicePath, pInput->pAcpiDeviceName);
+
+	ntStatus = RtlAnsiStringToUnicodeString(&ulDevicePath, &pDevicePath, TRUE);
+
+	if (!NT_SUCCESS(ntStatus)) {
+		return ntStatus;
+	}
+
+	ntStatus = IoGetDeviceObjectPointer(
+		&ulDevicePath,
+		FILE_ALL_ACCESS,
+		&pLDI->LowFileObject,
+		&pLDI->LowDeviceObject
+	);
+
+	if (!NT_SUCCESS(ntStatus)) {
+		return ntStatus;
+	}
+	pLDI->dwMajorVersion = pInput->dwMajorVersion;
+	pLDI->dwMinorVersion = pInput->dwMinorVersion;
+	pLDI->dwBuildNumber = pInput->dwBuildNumber;
+	pLDI->dwPlatformId = pInput->dwPlatformId;
+	// point the Acpi_Hal Device Extension for data retrieve
+	AcpiDeviceExtension = (UINT)(pLDI->LowDeviceObject)->DeviceExtension;
+
+	// seaching for the ACPI data objects, insert the notification code....
+	// Not test on Win7 may failed on old win10
+	// Check the device extension
+	// KdBreakPoint();
+	if (pInput->dwMajorVersion == 6) {
+		//pLDI->AcpiObject = (PVOID)(AcpiDeviceExtension + pLDI->uAcpiOffset);
+		// new way to get acpi acpi namespace is only verifed on windows 10 after 2016
+#ifndef _TINY_DRIVER_
+		if (GetAcpiObjectBase(pLDI, AcpiDeviceExtension) == STATUS_SUCCESS)
+		{
+			// TODO: Initialize or otherwise for alert
+		}
+#endif
+	}
+	else {
+		return STATUS_NOT_SUPPORTED;
+	}
+	return ntStatus;
+}
+
+#ifndef _TINY_DRIVER_
+NTSTATUS
 GetAcpiObjectBase(
 	__in PLOCAL_DEVICE_INFO pLDI,
 	__in UINTN address
@@ -276,157 +365,6 @@ Return Value:
 		}
 	} 
 	return;
-}
-
-
-NTSTATUS
-OpenAcpiDevice(
-	__in PLOCAL_DEVICE_INFO pLDI,
-	__in PIRP pIrp
-	)
-/*++
-
-Routine Description:
-	This routine processes the IOCTLs which read from the ports.
-
-Arguments:
-
-	pLDI        - our local device data
-	pIrp        - IO request packet
-	IrpStack    - The current stack location
-	IoctlCode   - The ioctl code from the IRP
-
-Return Value:
-	STATUS_SUCCESS           -- OK
-
-	STATUS_INVALID_PARAMETER -- The buffer sent to the driver
-								was too small to contain the
-								port, or the buffer which
-								would be sent back to the driver
-								was not a multiple of the data size.
-
-	STATUS_ACCESS_VIOLATION  -- An illegal port number was given.
-
---*/
-
-{
-	ANSI_STRING     pDevicePath;
-	UNICODE_STRING  ulDevicePath;
-	NTSTATUS        ntStatus;
-	ACPI_NAME       *pInput;
-	UINT            AcpiDeviceExtension;
-	
-	PAGED_CODE();
-
-	// Size of buffer containing data from application
-
-	pInput = (ACPI_NAME *)pIrp->AssociatedIrp.SystemBuffer;
-
-	RtlInitAnsiString(&pDevicePath, pInput->pAcpiDeviceName);
-
-	ntStatus = RtlAnsiStringToUnicodeString(&ulDevicePath, &pDevicePath, TRUE);
-
-	if (!NT_SUCCESS(ntStatus)) {
-		return ntStatus;
-	}
-
-	ntStatus = IoGetDeviceObjectPointer(
-		&ulDevicePath,
-		FILE_ALL_ACCESS,
-		&pLDI->LowFileObject,
-		&pLDI->LowDeviceObject
-	);
-
-	if (!NT_SUCCESS(ntStatus)) {
-		return ntStatus;
-	}
-	pLDI->dwMajorVersion = pInput->dwMajorVersion;
-	pLDI->dwMinorVersion = pInput->dwMinorVersion;
-	pLDI->dwBuildNumber = pInput->dwBuildNumber;
-	pLDI->dwPlatformId = pInput->dwPlatformId;
-	// point the Acpi_Hal Device Extension for data retrieve
-	AcpiDeviceExtension = (UINT)(pLDI->LowDeviceObject)->DeviceExtension;
-	// following code is only for early windows 10 and previouse windows OS include XP
-#if 0
-
-	/*if (AcpiDeviceExtension != 0) {
-		AcpiDeviceExtension = (UINT)(pLDI->LowDeviceObject)->DeviceObjectExtension->DeviceObject->DeviceExtension;
-	}*/
-	RtlFreeUnicodeString(&ulDevicePath);
-	For XP/VIST and Win7
-	if (pInput->dwMajorVersion == 5) {
-		//
-		// XP
-		//
-#ifdef AMD64    
-		return STATUS_NOT_SUPPORTED;
-#else
-		//AcpiDeviceExtension += 0x168;
-		//
-		// XP is 0x12C
-		// Vista/Win7 is 0x168
-		pLDI->uAcpiOffset = 0x12C;
-#endif
-	}
-	
-	else if (pInput->dwMajorVersion == 6) {
-		//DbgBreakPoint ();
-		//DbgBreakPoint ();		
-		//
-		// Vista 32 and 64 has different build version
-		//
-#ifdef AMD64
-		//
-		// Vista 64bit is 0x240
-		//AcpiDeviceExtension += 0x240;
-		
-		if (pInput->dwMinorVersion == 2 && pInput->dwBuildNumber > 0x2000)
-		{
-			pLDI->uAcpiOffset = 0x2C8;// Win10 some version....
-			
-		}
-		else if (pInput->dwMinorVersion == 2)
-		{
-			//DbgBreakPoint ();
-			// Win8 64 bit TBD
-			//pLDI->uAcpiOffset = 0x278;// 0x188
-			// Win8 RTM 64bit
-			pLDI->uAcpiOffset = 0x2A0;// 0x188
-		}
-#else
-		//AcpiDeviceExtension += 0x168;
-		//
-		// XP is 0x12C
-		// Vista/Win7  is 0x168
-		if (pInput->dwMinorVersion == 2)
-		{
-			// Win8 32bit
-			//pLDI->uAcpiOffset = 0x188;	
-			// Win8 RTM 32bit
-			pLDI->uAcpiOffset = 0x1AC;
-		}
-		else
-		{
-			pLDI->uAcpiOffset = 0x168;
-		}
-#endif
-#endif
-	// seaching for the ACPI data objects, insert the notification code....
-	// Not test on Win7 may failed on old win10
-	// Check the device extension
-	// KdBreakPoint();
-	if (pInput->dwMajorVersion == 6) {
-		//pLDI->AcpiObject = (PVOID)(AcpiDeviceExtension + pLDI->uAcpiOffset);
-		// new way to get acpi acpi namespace is only verifed on windows 10 after 2016
-		if (GetAcpiObjectBase(pLDI, AcpiDeviceExtension) == STATUS_SUCCESS)
-		{
-			// TODO: Initialize or otherwise for alert
-		}
-	}
-	else {
-		return STATUS_NOT_SUPPORTED;
-	}
-	return ntStatus;
 }
 
 NTSTATUS
@@ -628,17 +566,15 @@ Return Value:
 		(ACPI_EVAL_INPUT_BUFFER_EX*)ExAllocatePoolWithTag(NonPagedPool, sizeof(ACPI_EVAL_INPUT_BUFFER_EX), MY_TAG);
 
 	pMethodWithoutInputEx->Signature = ACPI_EVAL_INPUT_BUFFER_SIGNATURE_EX;
-	pMethodWithoutInputEx->MethodName[0] = puNameSeg[0];
-	pMethodWithoutInputEx->MethodName[1] = puNameSeg[1];
-	pMethodWithoutInputEx->MethodName[2] = puNameSeg[2];
-	pMethodWithoutInputEx->MethodName[3] = puNameSeg[3];
-	pMethodWithoutInputEx->MethodName[4] = 0;
+	strcpy_s(pMethodWithoutInputEx->MethodName, 255, (char *) puNameSeg);
 
-	
 	GET_ACPI_OBJS_ROOT(pAcpiRoot);
 	if (pAcpiRoot != NULL) {
 		SET_ACPI_OBJS_ROOT(pParent);
 	}
+
+	DebugPrint(("HWACC: Eval without input method:"));
+	DebugPrint((pMethodWithoutInputEx->MethodName));
 
 	status = SendDownStreamIrp(
 		pLDI->LowDeviceObject,
@@ -651,7 +587,6 @@ Return Value:
 	SET_ACPI_OBJS_ROOT(pAcpiRoot);
 	return status;
 }
-
 
 NTSTATUS
 EvalAcpiWithoutInput(
@@ -686,9 +621,9 @@ Return Value:
 
 	NTSTATUS                    status;
 	PACPI_NAMESPACE             pAcpiNameSpace;
-	ACPI_EVAL_OUTPUT_BUFFER		acpi_eval_out;
-	ULONG						nSize = sizeof(acpi_eval_out);
-	UCHAR						uName[4];
+	//ACPI_EVAL_OUTPUT_BUFFER		acpi_eval_out;
+	ULONG						nSize = sizeof(ACPI_EVAL_OUTPUT_BUFFER);// sizeof(acpi_eval_out);
+	UCHAR						uName[5];
 
 	PAGED_CODE();
 	
@@ -706,6 +641,7 @@ Return Value:
 	uName[1] = pAcpiNameSpace->MethodName[1];
 	uName[2] = pAcpiNameSpace->MethodName[2];
 	uName[3] = pAcpiNameSpace->MethodName[3];	
+	uName[4] = 0;
 	//if (pAcpiNameSpace->pKernelAddr == pLDI->pSetupAml) {
 	//	//Debug for Aml Notification
 	//	//KdBreakPoint();		
@@ -827,7 +763,7 @@ Return Value:
 	if (pInput->InputBufferComplex.Signature == ACPI_EVAL_INPUT_BUFFER_COMPLEX_SIGNATURE_EX) {
 		status = EvalAcpiWithInputInternalEx(
 					pLDI, 
-					&pInput->InputBufferComplex, 
+			        (ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX*) &pInput->InputBufferComplex,
 					(ACPI_OBJ*)pAcpiNameSpace->pParentNameSpace, 
 					uName, 
 					pInput, 
@@ -900,6 +836,9 @@ Return Value:
 		SET_ACPI_OBJS_ROOT(pParent);
 	}
 
+	DebugPrint(("HWACC: Eval with input method:"));
+	DebugPrint((pMethodWithoutInputEx->MethodName));
+
 	status = SendDownStreamIrp(
 		pLDI->LowDeviceObject,
 		IOCTL_ACPI_EVAL_METHOD,
@@ -915,7 +854,7 @@ Return Value:
 NTSTATUS
 EvalAcpiWithInputInternalEx(
 	__in PLOCAL_DEVICE_INFO pLDI,
-	__in ACPI_EVAL_INPUT_BUFFER_COMPLEX* pInputBuffer,
+	__in ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX* pInputBuffer,
 	__in ACPI_OBJ* pParent,
 	__in UCHAR* puNameSeg,
 	__in PVOID	pBuffer,
@@ -950,11 +889,13 @@ Return Value:
 	ULONG nSize = pInputBuffer->Size;
 	pInputBuffer->Signature = ACPI_EVAL_INPUT_BUFFER_COMPLEX_SIGNATURE_EX;
 
-	//UNREFERENCED_PARAMETER(pParent);
 	GET_ACPI_OBJS_ROOT(pAcpiRoot);
 	if (pAcpiRoot != NULL) {
 		SET_ACPI_OBJS_ROOT(pParent);
 	}
+
+	DebugPrint(("HWACC: Eval with input EX method:"));
+	DebugPrint((pInputBuffer->MethodName));
 
 	status = SendDownStreamIrp(
 		pLDI->LowDeviceObject,
@@ -1158,4 +1099,135 @@ Return Value:
 		return STATUS_BUFFER_OVERFLOW;
 	}
 	return STATUS_SUCCESS;	
+}
+#endif // #ifndef _TINY_DRIVER_
+
+NTSTATUS
+EvalAcpiWithoutInputDirect(
+	__in PLOCAL_DEVICE_INFO pLDI,
+	__in PIRP pIrp,
+	__in PIO_STACK_LOCATION IrpStack
+)
+/*++
+
+Routine Description:
+
+	Eval ACPI data or method without input paramter
+
+Arguments:
+
+	pLDI        - our local device data
+	pIrp        - IO request packet
+	IrpStack    - The current stack location
+
+Return Value:
+	STATUS_SUCCESS           -- OK
+
+	STATUS_INVALID_PARAMETER -- The buffer sent to the driver
+								was too small to contain the
+								port, or the buffer which
+								would be sent back to the driver
+								was not a multiple of the data size.
+
+--*/
+{
+
+
+	NTSTATUS                    status;
+	PACPI_EVAL_INPUT_BUFFER_EX  pInput;
+	//ACPI_EVAL_OUTPUT_BUFFER		acpi_eval_out;
+	ULONG						nSize = 0;// sizeof(acpi_eval_out);
+	//UCHAR						uName[5];
+
+	PAGED_CODE();
+
+	if (IrpStack->Parameters.DeviceIoControl.InputBufferLength < sizeof(PACPI_EVAL_INPUT_BUFFER_EX)) {
+		return STATUS_INVALID_PARAMETER_2;
+	}
+
+	pInput = (PACPI_EVAL_INPUT_BUFFER_EX) pIrp->AssociatedIrp.SystemBuffer;
+	nSize = IrpStack->Parameters.DeviceIoControl.OutputBufferLength;
+
+	if (pInput == NULL) {
+		return STATUS_INVALID_PARAMETER_1;
+	}
+
+	pInput->Signature = ACPI_EVAL_INPUT_BUFFER_SIGNATURE_EX;
+
+	status = SendDownStreamIrp(
+		pLDI->LowDeviceObject,
+		IOCTL_ACPI_EVAL_METHOD_EX,
+		pInput,
+		sizeof(ACPI_EVAL_INPUT_BUFFER_EX),
+		pInput,
+		nSize
+	);
+
+	pIrp->IoStatus.Information = nSize;
+	return status;
+
+}
+
+NTSTATUS
+EvalAcpiWithInputDirect(
+	__in PLOCAL_DEVICE_INFO pLDI,
+	__in PIRP pIrp,
+	__in PIO_STACK_LOCATION IrpStack
+)
+/*++
+
+Routine Description:
+
+	Eval ACPI data or method without input paramter
+
+Arguments:
+
+	pLDI        - our local device data
+	pIrp        - IO request packet
+	IrpStack    - The current stack location
+
+Return Value:
+	STATUS_SUCCESS           -- OK
+
+	STATUS_INVALID_PARAMETER -- The buffer sent to the driver
+								was too small to contain the
+								port, or the buffer which
+								would be sent back to the driver
+								was not a multiple of the data size.
+	others					 -- Result from Lower Driver
+
+--*/
+{
+	NTSTATUS                    status;
+	//PACPI_NAMESPACE             pAcpiNameSpace;
+	//ACPI_EVAL_OUTPUT_BUFFER		acpi_eval_out;
+	ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX *pInput;
+	ULONG						nSize = 0;// sizeof(acpi_eval_out);
+	//UCHAR						uName[4];
+
+	PAGED_CODE();
+
+	if (IrpStack->Parameters.DeviceIoControl.InputBufferLength < sizeof(ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX)) {
+		return STATUS_INVALID_PARAMETER_2;
+	}
+	pInput = (ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX *) pIrp->AssociatedIrp.SystemBuffer;
+
+	nSize = IrpStack->Parameters.DeviceIoControl.OutputBufferLength;
+
+	//ULONG nSize = pInput->Size;
+	pInput->Signature = ACPI_EVAL_INPUT_BUFFER_COMPLEX_SIGNATURE_EX;
+
+	status = SendDownStreamIrp(
+		pLDI->LowDeviceObject,
+		IOCTL_ACPI_EVAL_METHOD_EX,
+		pInput,
+		pInput->Size,
+		pInput,
+		nSize
+	);
+
+	pIrp->IoStatus.Information = nSize;
+
+	return status;
+
 }

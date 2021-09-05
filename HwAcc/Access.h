@@ -197,10 +197,25 @@ SetupAmlForNotifyInternal(
 NTSTATUS
 EvalAcpiWithInputInternalEx(
 	__in PLOCAL_DEVICE_INFO pLDI,
-	__in ACPI_EVAL_INPUT_BUFFER_COMPLEX* pInputBuffer,
+	__in ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX* pInputBuffer,
 	__in ACPI_OBJ* pParent,
 	__in UCHAR* puNameSeg,
 	__in PVOID	pBuffer,
 	__in ULONG* uBufSize
 );
+
+NTSTATUS
+EvalAcpiWithoutInputDirect(
+	__in PLOCAL_DEVICE_INFO pLDI,
+	__in PIRP pIrp,
+	__in PIO_STACK_LOCATION IrpStack
+);
+
+NTSTATUS
+EvalAcpiWithInputDirect(
+	__in PLOCAL_DEVICE_INFO pLDI,
+	__in PIRP pIrp,
+	__in PIO_STACK_LOCATION IrpStack
+);
+
 #endif

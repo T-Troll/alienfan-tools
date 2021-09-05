@@ -4,48 +4,45 @@
 #include <iostream>
 #include <vector>
 #include "alienfan-SDK.h"
-#include "resource.h"
-#include "acpilib.h"
-//#include "acpi->h"
 
 using namespace std;
 
-void DumpAcpi(ACPI_NS_DATA data) {
-    int offset = 0;
-    string fullname;
-    ACPI_NAMESPACE* curData = data.pAcpiNS;
-    for (UINT i = 0; i < data.uCount; i++) {
-        //for (int j = 0; j < offset; j++)
-        //    cout << "|";
-        string mname = (char*)curData->MethodName;
-        mname.resize(4);
-        cout << fullname << mname << endl;
-        if (curData->pChild) {
-            // need to go deep...
-            if (offset > 0)
-                fullname += mname;
-            curData = curData->pChild;
-            offset++;
-        } else
-            while (curData && !curData->pNext) {
-                // going up to tree
-                curData = curData->pParent;
-                offset--;
-                if (offset > 0)
-                    fullname.resize((offset -1)* 4);
-            }
-        if (curData) {
-            curData = curData->pNext;
-        } else
-            break;
-    }
-}
+//void DumpAcpi(ACPI_NS_DATA data) {
+//    int offset = 0;
+//    string fullname;
+//    ACPI_NAMESPACE* curData = data.pAcpiNS;
+//    for (UINT i = 0; i < data.uCount; i++) {
+//        //for (int j = 0; j < offset; j++)
+//        //    cout << "|";
+//        string mname = (char*)curData->MethodName;
+//        mname.resize(4);
+//        cout << fullname << mname << endl;
+//        if (curData->pChild) {
+//            // need to go deep...
+//            if (offset > 0)
+//                fullname += mname;
+//            curData = curData->pChild;
+//            offset++;
+//        } else
+//            while (curData && !curData->pNext) {
+//                // going up to tree
+//                curData = curData->pParent;
+//                offset--;
+//                if (offset > 0)
+//                    fullname.resize((offset -1)* 4);
+//            }
+//        if (curData) {
+//            curData = curData->pNext;
+//        } else
+//            break;
+//    }
+//}
 
 void Usage() {
     cout << "Usage: alienfan-cli [command[=value{,value}] [command...]]" << endl
         << "Avaliable commands: " << endl
         << "usage, help\t\t\tShow this usage" << endl
-        << "dump\t\t\t\tDump all ACPI values avaliable (for debug and new hardware support)" << endl
+        //<< "dump\t\t\t\tDump all ACPI values avaliable (for debug and new hardware support)" << endl
         << "rpm\t\t\t\tShow fan(s) RPMs" << endl
         << "temp\t\t\t\tShow known temperature sensors values" << endl
         << "unlock\t\t\t\tUnclock fan controls" << endl
@@ -97,9 +94,7 @@ void Usage() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v0.0.11.0\n";
-
-    //wstring drvName = UnpackDriver();
+    std::cout << "AlienFan-cli v1.0.0.0\n";
 
     AlienFan_SDK::Control* acpi = new AlienFan_SDK::Control();
 
@@ -159,12 +154,12 @@ int main(int argc, char* argv[])
                         }
                         continue;
                     }
-                    if (command == "dump") {
-                        ACPI_NS_DATA data = {0};
-                        QueryAcpiNS(acpi->GetHandle(), &data, 0xc1);
-                        DumpAcpi(data);
-                        continue;
-                    }
+                    //if (command == "dump") {
+                    //    ACPI_NS_DATA data = {0};
+                    //    QueryAcpiNS(acpi->GetHandle(), &data, 0xc1);
+                    //    DumpAcpi(data);
+                    //    continue;
+                    //}
                     if (command == "unlock") {
                         if (acpi->Unlock() >= 0)
                             cout << "Unlock successful." << endl;
@@ -329,8 +324,5 @@ int main(int argc, char* argv[])
         cout << "System configuration issue - see readme.md for details!" << endl;
     }
     delete acpi;
-#ifndef KERNEL_HACK
-    //DeleteFile(drvName.c_str());
-#endif
-    //cout << "Done!" << endl;
+
 }

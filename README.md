@@ -7,15 +7,13 @@ Tools avaliable:
 - `alienfan-gui` - Fan control GUI application
 
 ## Disclamer
-- This tools utilize low-level ACPI functions access, this can be dangerous and can provide system hang, BSOD and even hardware damage! Use with care, at you own risk!
+- This tools utilize low-level ACPI functions access, it can provide BSOD at start if supported ACPI bus not found! Use with care, at you own risk!
 
 ## Known issues
-- **DO NOT** try to run this tools at non-Alienware gear! It can provide dangerous result!
-- ACPI driver can hang into stopping state. Run app without parameters 3 of times to reset it.
+- ACPI driver can hang into stopping state. Run `alienfan-cli` without parameters to reset it.
 - Fan PRMs boost is quite fast, but if you lower boost, it took some time to slow down fans. 
 - Power control only avaliable on some models, f.e. m15R1, m15R3.
 - Power control modes not detected in power grow order, so check real PL1 after set using other tool, f.e. HWINFO.  
-For my gear 0 = 60W unlocked, 1 - 60W, 2 - 75W, 3 - 45W with gpu boost, 4 - 45W. You gear can have other settings.
 - Set Power control to non-zero value can block (lock back) fan control.
 - As usual, AWCC service can interfere (reset values from time to time), so it's reccomended to stop it.
 
@@ -23,7 +21,7 @@ For my gear 0 = 60W unlocked, 1 - 60W, 2 - 75W, 3 - 45W with gpu boost, 4 - 45W.
 - Windows 10 x64 OS revision 1706 or higher. Any other OS **Does not supported!**
 - Go into BIOS and disable "Secure boot" option - it's interfere with the next point.
 - "Test mode" should be enabled. Issue `bcdedit /set testsigning on`  command from Administarator command prompt to enable it, then reboot.
-- Supported Alienware hardware.
+- Supported Dell/Alienware hardware.
 
 ## Installation
 Unpack tools into folder, run exe.  
@@ -31,7 +29,9 @@ NB: You should have hwacc.sys into the same folder.
 
 ## Supported hardware
 - Notebooks: `Alienware m15/17R1` or later, `Alienware Area51m-R1` or later.
+- Should work, but not tested completely: `Alienware Area51m R2`, `Dell G-series`
 - Desktops: <s>`Alienware Aurora R7` or later (with issues, need more testing).</s> Sorry, not supported now (different function mapping).
+- Only Intel CPU and NVidia GPU supported. AMD/Radeon need other commands.
 
 ### Tested gear:
 - `Alienware m15R1`: 
@@ -84,7 +84,6 @@ ACPI can't control fans directly (well... i'm working on it), so all you can do 
 Run `alienfan-cli [command[=value{,value}] [command...]]`. After start, it detect you gear and show number of fans, temperature sensors and power modes avaliable.
 Avaliable commands:
 - `usage`, `help` - Show short help
-- `dump` - Dump all ACPI values avaliable (for debug and new hardware support)
 - `rpm` - Show current fan RPMs
 - `temp` - Show known temperature sensors name and value
 - `unlock` - Enable manual fan control
@@ -121,6 +120,7 @@ NB: for both `direct` commands, all values are not decimal, but hex (like c8, a3
   - [x] Alienware m15/m17 (any release)
   - [ ] Older Alienware (need to repair my old one to check)
   - [x] Area 51 (need ACPI dump from it)
+  - [x] Dell G3/G5 (non-AMD)
   - [ ] Desktops (work in progress)
 - [x] SDK lib for easy sharing
 - [x] Driver file embedding into app
