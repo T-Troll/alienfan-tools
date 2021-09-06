@@ -20,11 +20,22 @@ AlienFan_SDK::Control *InitAcpi() {
         cpath.resize(cpath.find_last_of("\\"));
         string shellcom = "-prv 6 -scv 3 -drvn HwAcc -map \"" + cpath + "\\HwAcc.sys\"",
             shellapp = "\"" + cpath + "\\KDU\\kdu.exe\"";
-        int res = (int) ShellExecute(NULL, "runas", shellapp.c_str(), shellcom.c_str(), NULL, SW_HIDE);
-        if (res > 31)
+
+        SHELLEXECUTEINFO shBlk = {0};
+        shBlk.cbSize = sizeof(SHELLEXECUTEINFO);
+        shBlk.fMask = SEE_MASK_NOASYNC | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NO_CONSOLE;
+        shBlk.lpFile = shellapp.c_str();
+        shBlk.lpParameters = shellcom.c_str();
+        shBlk.lpVerb = "runas";
+        shBlk.nShow = SW_HIDE;
+
+        if (ShellExecuteEx(&shBlk)) {
+            WaitForSingleObject(shBlk.hProcess, INFINITE);
+            CloseHandle(shBlk.hProcess);
             cAcpi = new AlienFan_SDK::Control();
-        else
+        } else {
             cAcpi = NULL;
+        }
     }
 
     return cAcpi;
@@ -53,7 +64,7 @@ void Usage() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v1.1.0.0\n";
+    std::cout << "AlienFan-cli v1.1.0.1\n";
 
     AlienFan_SDK::Control *acpi = InitAcpi();// new AlienFan_SDK::Control();
 
