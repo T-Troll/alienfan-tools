@@ -55,6 +55,7 @@ namespace AlienFan_SDK {
 		HANDLE acc = NULL;
 		short aDev = -1;
 		bool activated = false;
+		bool haveService = false;
 		SC_HANDLE scManager = NULL;
 		//int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
 	public:

@@ -19,16 +19,10 @@ Environment:
 
 --*/
 
-#ifndef _KERNEL_MODE
-// This is a user-mode driver
-#include <windows.h>
-#include <wdf.h>
-#else
 // This is a kernel-mode driver
 #include <ntddk.h>
 #define NTSTRSAFE_LIB
 #include <ntstrsafe.h>
-#endif
 #include <stdio.h>
 #include "def.h"
 #include "access.h"
@@ -40,10 +34,9 @@ Environment:
 DRIVER_INITIALIZE DriverInit;
 #endif
 DRIVER_INITIALIZE DriverEntry;
-#ifndef _KERNEL_MODE
-#else
 DRIVER_DISPATCH CreateClose;
 DRIVER_DISPATCH DeviceControl;
+#ifndef KERNEL_HACK
 DRIVER_UNLOAD UnloadDriver;
 #endif
 
@@ -55,7 +48,9 @@ DRIVER_UNLOAD UnloadDriver;
 #endif
 #pragma alloc_text( PAGE, CreateClose)
 #pragma alloc_text( PAGE, DeviceControl)
+#ifndef KERNEL_HACK
 #pragma alloc_text( PAGE, UnloadDriver)
+#endif
 #pragma alloc_text( PAGE, OpenAcpiDevice)
 #endif // ALLOC_PRAGMA
 
@@ -118,7 +113,7 @@ Return Value:
 
 	NTSTATUS        ntStatus;
 	UNICODE_STRING  ntUnicodeString;    // NT Device Name "\Device\HwAcc"
-	UNICODE_STRING  ntWin32NameString;    // Win32 Name "\DosDevices\IoctlTest"
+	UNICODE_STRING  ntWin32NameString;    // Win32 Name "\DosDevices\HwAcc"
 	PDEVICE_OBJECT  deviceObject = NULL;    // ptr to device object
 
 
@@ -229,6 +224,7 @@ Return Value:
 	return STATUS_SUCCESS;
 }
 
+#ifndef _TINY_DRIVER_
 void
 RemoveAcpiNS(
 	__in PACPI_NAME_NODE	pAcpiNS
@@ -254,7 +250,9 @@ Return Value:
 	pCurrent->pPrev = pPrev;
 	pPrev->pNext = pCurrent;
 }
+#endif
 
+#ifndef KERNEL_HACK
 VOID
 UnloadDriver(
 	__in PDRIVER_OBJECT DriverObject
@@ -313,7 +311,7 @@ Return Value:
 	}
 	DebugPrint(("HWACC: Device unloaded\n"));
 }
-
+#endif
 
 NTSTATUS
 DeviceControl(

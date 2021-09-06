@@ -154,8 +154,9 @@
       <Optimization>MinSpace</Optimization>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <UndefinePreprocessorDefinitions>_KERNEL_MODE</UndefinePreprocessorDefinitions>
-      <PreprocessorDefinitions>_TINY_DRIVER_;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
+      <PreprocessorDefinitions>KERNEL_HACK;_TINY_DRIVER_;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>false</EnableCOMDATFolding>
@@ -168,8 +169,9 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <UndefinePreprocessorDefinitions>_KERNEL_MODE</UndefinePreprocessorDefinitions>
-      <PreprocessorDefinitions>_TINY_DRIVER_;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
+      <PreprocessorDefinitions>KERNEL_HACK;_TINY_DRIVER_;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link />
   </ItemDefinitionGroup>

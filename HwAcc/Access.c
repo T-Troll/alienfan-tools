@@ -19,16 +19,10 @@ Environment:
 
 --*/
 
-#ifndef _KERNEL_MODE
-// This is a user-mode driver
-#include <windows.h>
-#include <wdf.h>
-#else
 // This is a kernel-mode driver
 #include <ntddk.h>
 #define NTSTRSAFE_LIB
 #include <ntstrsafe.h>
-#endif
 #include <string.h>
 #include <Acpiioct.h>   
 #include "def.h"
@@ -148,6 +142,8 @@ Return Value:
 	
 	PAGED_CODE();
 
+	DebugPrint(("HWACC: Open ACPI device..."));
+
 	// Size of buffer containing data from application
 
 	pInput = (ACPI_NAME *)pIrp->AssociatedIrp.SystemBuffer;
@@ -194,6 +190,9 @@ Return Value:
 	else {
 		return STATUS_NOT_SUPPORTED;
 	}
+
+	DebugPrint(("HWACC: Open ACPI device done!"));
+
 	return ntStatus;
 }
 
@@ -1141,6 +1140,8 @@ Return Value:
 
 	PAGED_CODE();
 
+	DebugPrint(("HWACC: Eval without input direct..."));
+
 	if (IrpStack->Parameters.DeviceIoControl.InputBufferLength < sizeof(PACPI_EVAL_INPUT_BUFFER_EX)) {
 		return STATUS_INVALID_PARAMETER_2;
 	}
@@ -1164,6 +1165,9 @@ Return Value:
 	);
 
 	pIrp->IoStatus.Information = nSize;
+
+	DebugPrint(("HWACC: Eval without input direct done!"));
+
 	return status;
 
 }
@@ -1207,6 +1211,8 @@ Return Value:
 
 	PAGED_CODE();
 
+	DebugPrint(("HWACC: Eval with input direct..."));
+
 	if (IrpStack->Parameters.DeviceIoControl.InputBufferLength < sizeof(ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX)) {
 		return STATUS_INVALID_PARAMETER_2;
 	}
@@ -1227,6 +1233,8 @@ Return Value:
 	);
 
 	pIrp->IoStatus.Information = nSize;
+
+	DebugPrint(("HWACC: Eval with input direct done"));
 
 	return status;
 

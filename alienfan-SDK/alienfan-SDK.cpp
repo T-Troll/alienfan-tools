@@ -8,38 +8,44 @@ namespace AlienFan_SDK {
 
 	// One string to rule them all!
 	// AMW interface com - 3 parameters (not used, com, buffer).
-	TCHAR* mainCommand = (TCHAR*) TEXT("\\____SB_AMW1WMAX");
+	//TCHAR* mainCommand = (TCHAR*) TEXT("\\____SB_AMW1WMAX");
 
 	// GPU control interface
-	TCHAR* gpuCommand = (TCHAR*) TEXT("\\____SB_PCI0PEG0PEGPGPS_");
+	//TCHAR* gpuCommand = (TCHAR*) TEXT("\\____SB_PCI0PEG0PEGPGPS_");
 	// arg0 not used, arg1 always 0x100, arg2 is command, arg3 is DWORD mask.
 
 	Control::Control() {
 
-		TCHAR  driverLocation[MAX_PATH] = {0};
-		if (GetServiceName(driverLocation, MAX_PATH)) {
-			scManager = OpenSCManager(
-				NULL,                   // local machine
-				NULL,                   // local database
-				SC_MANAGER_ALL_ACCESS   // access required
-			);
-			InstallService(scManager, driverLocation);
-			if (DemandService(scManager)) {
-				activated = (acc = OpenAcpiDevice()) != INVALID_HANDLE_VALUE;
-			}
-			else wrongEnvironment = true;
-		} else wrongEnvironment = true;
+		// do we already have service runnning?
+		activated = (acc = OpenAcpiDevice()) != INVALID_HANDLE_VALUE && acc;
+		if (!activated) {
+			// We don't, so let's try to start it!
+			TCHAR  driverLocation[MAX_PATH] = {0};
+			if (GetServiceName(driverLocation, MAX_PATH)) {
+				scManager = OpenSCManager(
+					NULL,                   // local machine
+					NULL,                   // local database
+					SC_MANAGER_ALL_ACCESS   // access required
+				);
+				InstallService(scManager, driverLocation);
+				if (DemandService(scManager)) {
+					activated = (acc = OpenAcpiDevice()) != INVALID_HANDLE_VALUE && acc;
+				} else wrongEnvironment = true;
+			} else wrongEnvironment = true;
+		} else
+			haveService = true;
 	}
 	Control::~Control() {
 		sensors.clear();
-			fans.clear();
-			powers.clear();
-			CloseAcpiDevice(acc);
+		fans.clear();
+		powers.clear();
+		CloseAcpiDevice(acc);
+		if (!haveService)
 			UnloadService();
 	}
 
 	void Control::UnloadService() {
-		if (acc != INVALID_HANDLE_VALUE && acc) {
+		if (!haveService && acc != INVALID_HANDLE_VALUE && acc) {
 			StopService(scManager);
 			RemoveService(scManager);
 			CloseServiceHandle(scManager);
