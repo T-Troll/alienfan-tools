@@ -8,7 +8,7 @@
 #include <CommCtrl.h>
 #include <string>
 #include <wininet.h>
-#include <shlobj_core.h>
+//#include <shlobj_core.h>
 #include "alienfan-SDK.h"
 #include "ConfigHelper.h"
 #include "MonHelper.h"
@@ -44,38 +44,27 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    FanCurve(HWND, UINT, WPARAM, LPARAM);
 
-//string UnpackDriver() {
-//    // Unpack driver file, if not exist...
-//    char currentPath[MAX_PATH];
-//    GetModuleFileName(NULL, currentPath, MAX_PATH);
-//    string name = currentPath;
-//    name.resize(name.find_last_of("\\"));
-//    name+= "\\HwAcc.sys";
-//    HANDLE hndFile = CreateFile(
-//        name.c_str(),
-//        GENERIC_WRITE,
-//        0,
-//        NULL,
-//        CREATE_NEW,
-//        0,
-//        NULL
-//    );
-//
-//    if (hndFile != INVALID_HANDLE_VALUE ) {
-//        // No driver file, create one...
-//        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), "Driver");
-//        if (driverInfo) {
-//            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
-//            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
-//            DWORD writeBytes = SizeofResource(NULL, driverInfo);
-//            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
-//            UnlockResource(driverHandle);
-//        }
-//        CloseHandle(hndFile);
-//    } else
-//        return TEXT("");
-//    return name;
-//}
+AlienFan_SDK::Control *InitAcpi() {
+    AlienFan_SDK::Control* cAcpi = new AlienFan_SDK::Control();
+
+    if (!cAcpi->IsActivated()) {
+        // Driver can't start, let's do kernel hack...
+        delete cAcpi;
+        char currentPath[MAX_PATH];
+        GetModuleFileName(NULL, currentPath, MAX_PATH);
+        string cpath = currentPath;
+        cpath.resize(cpath.find_last_of("\\"));
+        string shellcom = "-prv 6 -scv 3 -drvn HwAcc -map \"" + cpath + "\\HwAcc.sys\"",
+            shellapp = "\"" + cpath + "\\KDU\\kdu.exe\"";
+        int res = (int) ShellExecute(NULL, "runas", shellapp.c_str(), shellcom.c_str(), NULL, SW_NORMAL/*SW_HIDE*/);
+        if (res > 31)
+            cAcpi = new AlienFan_SDK::Control();
+        else
+            cAcpi = NULL;
+    }
+
+    return cAcpi;
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -90,11 +79,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     fan_conf = new ConfigHelper();
     fan_conf->Load();
 
-    //string drvName = UnpackDriver();
+    acpi = InitAcpi();
 
-    acpi = new AlienFan_SDK::Control();
-
-    if (acpi->Probe()) {
+    if (acpi && acpi->Probe()) {
 
         // Perform application initialization:
         HWND mDlg;
@@ -124,24 +111,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         delete mon;
 
     } else {
-        if (acpi->wrongEnvironment)
-            if (MessageBox(NULL, "Wrong envoronment settings. Do you want to set it?", "Driver installation error",
-                           MB_YESNO | MB_ICONWARNING) == IDYES) {
-                MessageBox(NULL, "You should disabe Secure Boot in BIOS before this operation, and restart you system after application exit!\nUse 'bcdedit /set testsigning off' from command line to revert.", "Warning!",
-                           MB_OK | MB_ICONHAND);
-                string shellcom = "/set testsigning on";
-                ShellExecute(NULL, "runas", "bcdedit", shellcom.c_str(), NULL, SW_HIDE);
-            }
-        else
-            MessageBox(NULL, "No Alienware hardware detected or access denied.", "Fatal error",
+        MessageBox(NULL, "No supported hardware detected or access denied.", "Fatal error",
                    MB_OK | MB_ICONSTOP);
-        acpi->UnloadService();
     }
-    delete acpi;
-#ifndef KERNEL_HACK
-    //DeleteFile(drvName.c_str());
-#endif
 
+    delete acpi;
     delete fan_conf;
 
     return (int) msg.wParam;

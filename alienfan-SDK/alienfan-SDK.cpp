@@ -40,8 +40,7 @@ namespace AlienFan_SDK {
 		fans.clear();
 		powers.clear();
 		CloseAcpiDevice(acc);
-		if (!haveService)
-			UnloadService();
+		UnloadService();
 	}
 
 	void Control::UnloadService() {

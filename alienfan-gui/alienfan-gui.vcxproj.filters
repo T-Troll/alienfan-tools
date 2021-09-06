@@ -58,4 +58,8 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="..\KDU\drv64.dll" />
+    <CopyFileToFolders Include="..\KDU\kdu.exe" />
+  </ItemGroup>
 </Project>

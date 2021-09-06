@@ -4,39 +4,31 @@
 #include <iostream>
 #include <vector>
 #include "alienfan-SDK.h"
+#include <shellapi.h>
 
 using namespace std;
 
-//void DumpAcpi(ACPI_NS_DATA data) {
-//    int offset = 0;
-//    string fullname;
-//    ACPI_NAMESPACE* curData = data.pAcpiNS;
-//    for (UINT i = 0; i < data.uCount; i++) {
-//        //for (int j = 0; j < offset; j++)
-//        //    cout << "|";
-//        string mname = (char*)curData->MethodName;
-//        mname.resize(4);
-//        cout << fullname << mname << endl;
-//        if (curData->pChild) {
-//            // need to go deep...
-//            if (offset > 0)
-//                fullname += mname;
-//            curData = curData->pChild;
-//            offset++;
-//        } else
-//            while (curData && !curData->pNext) {
-//                // going up to tree
-//                curData = curData->pParent;
-//                offset--;
-//                if (offset > 0)
-//                    fullname.resize((offset -1)* 4);
-//            }
-//        if (curData) {
-//            curData = curData->pNext;
-//        } else
-//            break;
-//    }
-//}
+AlienFan_SDK::Control *InitAcpi() {
+    AlienFan_SDK::Control *cAcpi = new AlienFan_SDK::Control();
+
+    if (!cAcpi->IsActivated()) {
+        // Driver can't start, let's do kernel hack...
+        delete cAcpi;
+        char currentPath[MAX_PATH];
+        GetModuleFileName(NULL, currentPath, MAX_PATH);
+        string cpath = currentPath;
+        cpath.resize(cpath.find_last_of("\\"));
+        string shellcom = "-prv 6 -scv 3 -drvn HwAcc -map \"" + cpath + "\\HwAcc.sys\"",
+            shellapp = "\"" + cpath + "\\KDU\\kdu.exe\"";
+        int res = (int) ShellExecute(NULL, "runas", shellapp.c_str(), shellcom.c_str(), NULL, SW_HIDE);
+        if (res > 31)
+            cAcpi = new AlienFan_SDK::Control();
+        else
+            cAcpi = NULL;
+    }
+
+    return cAcpi;
+}
 
 void Usage() {
     cout << "Usage: alienfan-cli [command[=value{,value}] [command...]]" << endl
@@ -59,46 +51,13 @@ void Usage() {
         << "  All values in \"direct\" commands should be hex, not decimal!" << endl;
 }
 
-//wstring UnpackDriver() {
-//    // Unpack driver file, if not exist...
-//    wchar_t currentPath[MAX_PATH];
-//    GetModuleFileName(NULL, currentPath, MAX_PATH);
-//    wstring name = currentPath;
-//    name.resize(name.find_last_of(TEXT("\\")));
-//    name+= TEXT("\\HwAcc.sys");
-//    HANDLE hndFile = CreateFile(
-//        name.c_str(),
-//        GENERIC_WRITE,
-//        0,
-//        NULL,
-//        CREATE_NEW,
-//        0,
-//        NULL
-//    );
-//
-//    if (hndFile != INVALID_HANDLE_VALUE ) {
-//        // No driver file, create one...
-//        HRSRC driverInfo = FindResource(NULL, MAKEINTRESOURCE(IDR_DRIVER), TEXT("Driver"));
-//        if (driverInfo) {
-//            HGLOBAL driverHandle = LoadResource(NULL, driverInfo);
-//            BYTE* driverBin = (BYTE*) LockResource(driverHandle);
-//            DWORD writeBytes = SizeofResource(NULL, driverInfo);
-//            WriteFile(hndFile, driverBin, writeBytes, &writeBytes, NULL);
-//            UnlockResource(driverHandle);
-//        }
-//        CloseHandle(hndFile);
-//    } else
-//        return TEXT("");
-//    return name;
-//}
-
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v1.0.0.0\n";
+    std::cout << "AlienFan-cli v1.1.0.0\n";
 
-    AlienFan_SDK::Control* acpi = new AlienFan_SDK::Control();
+    AlienFan_SDK::Control *acpi = InitAcpi();// new AlienFan_SDK::Control();
 
-    if (acpi->IsActivated()) {
+    if (acpi && acpi->IsActivated()) {
 
         if (acpi->Probe()) {
             cout << "Supported hardware detected, " << acpi->HowManyFans() << " fans, " 
@@ -138,12 +97,6 @@ int main(int argc, char* argv[])
                                 cout << "RPM reading failed!" << endl;
                                 break;
                             }
-                        //prms = RunMainCommand(0x14, 0x8, 0x32);
-                        //if (prms >= 0)
-                        //    cout << "Target CPU fan: " << prms;
-                        //prms = RunMainCommand(0x14, 0x8, 0x33);
-                        //if (prms >= 0)
-                        //    cout << ", Target GPU fan: " << prms << endl;
                         continue;
                     }
                     if (command == "temp") {
@@ -154,12 +107,6 @@ int main(int argc, char* argv[])
                         }
                         continue;
                     }
-                    //if (command == "dump") {
-                    //    ACPI_NS_DATA data = {0};
-                    //    QueryAcpiNS(acpi->GetHandle(), &data, 0xc1);
-                    //    DumpAcpi(data);
-                    //    continue;
-                    //}
                     if (command == "unlock") {
                         if (acpi->Unlock() >= 0)
                             cout << "Unlock successful." << endl;
@@ -268,49 +215,6 @@ int main(int argc, char* argv[])
                         continue;
                     }
                     //if (command == "test") { // pseudo block for tes modules
-                    //    // _SB.PCI0.LPCB.EC0.DRCB
-                    //    TCHAR command[] = TEXT("\\____SB_PCI0LPCBEC0_DRCB");
-                    //    TCHAR command2[] = TEXT("\\____SB_PCI0LPCBEC0_CRLV");
-                    //    PACPI_EVAL_OUTPUT_BUFFER res = NULL;
-                    //    USHORT nsType = GetNSType(command);
-                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command, &nsType);
-                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
-                    //    ACPI_EVAL_INPUT_BUFFER_COMPLEX* acpiargs;
-                    //    acpiargs = (ACPI_EVAL_INPUT_BUFFER_COMPLEX*) PutIntArg(NULL, 0xd2);
-                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command2, acpiargs);
-                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) EvalAcpiNSArgOutput(command, acpiargs);
-                    //    res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(command2, &nsType);
-                    //    if (res) {
-                    //        NotifyDevice((TCHAR*) TEXT("\\____SB_PCI0PEG0PEGP"), 0xd2);
-                    //        cout << res->Argument[0].Argument << endl;
-                    //    }
-                    //    //    ////_SB_PCI0B0D4PMAX PTDP PMIN TMAX PWRU
-                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"));
-                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PTDP"), &nType);
-                    //    //    //if (res) {
-                    //    //    //    cout << "PTDP = " << res->Argument[0].Argument << endl;
-                    //    //    //}
-                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"));
-                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMAX"), &nType);
-                    //    //    //if (res) {
-                    //    //    //    cout << "PMAX = " << res->Argument[0].Argument << endl;
-                    //    //    //}
-                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"));
-                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PMIN"), &nType);
-                    //    //    //if (res) {
-                    //    //    //    cout << "PMIN = " << res->Argument[0].Argument << endl;
-                    //    //    //}
-                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"));
-                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4TMAX"), &nType);
-                    //    //    //if (res) {
-                    //    //    //    cout << "TMAX = " << res->Argument[0].Argument << endl;
-                    //    //    //}
-                    //    //    //nType = GetNSType((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"));
-                    //    //    //res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue((TCHAR*) TEXT("\\____SB_PCI0B0D4PWRU"), &nType);
-                    //    //    //if (res) {
-                    //    //    //    cout << "PWRU = " << res->Argument[0].Argument << endl;
-                    //    //    //}
-                    //    //    int tRes = RunMainCommand(0x6, 0x0);
                     //    continue;
                     //}
                     cout << "Unknown command - " << command << ", use \"usage\" or \"help\" for information" << endl;

@@ -19,8 +19,9 @@ Tools avaliable:
 
 ## Requrements
 - Windows 10 x64 OS revision 1706 or higher. Any other OS **Does not supported!**
-- Go into BIOS and disable "Secure boot" option - it's interfere with the next point.
-- "Test mode" should be enabled. Issue `bcdedit /set testsigning on`  command from Administarator command prompt to enable it, then reboot.
+- There are 2 ways to prepare you system for driver loading:
+  - You can go into BIOS and disable "Secure boot" option, reboot, then issue `bcdedit /set testsigning on` command from Administarator command prompt and reboot again. You should see "Test mode" watermark on desktop if you do all correct.
+  - Do nothing, in this case driver will be installed using kernel hack. Some antivirus can complain, because it's close to rootkit way. Anyway, it will not stay in memory after reboot.
 - Supported Dell/Alienware hardware.
 
 ## Installation
@@ -115,7 +116,7 @@ NB: for both `direct` commands, all values are not decimal, but hex (like c8, a3
 
 ## ToDo:
 - [x] Temperature sensors reading
-- [ ] Eliminate "Test mode" requirement
+- [x] Eliminate "Test mode" requirement
 - [ ] Additional hardware support (thanks for ACPI dumps, provided by `alienfx-tools` community!):
   - [x] Alienware m15/m17 (any release)
   - [ ] Older Alienware (need to repair my old one to check)
