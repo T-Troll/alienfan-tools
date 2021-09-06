@@ -142,6 +142,7 @@ MIT. You can use these tools for any non-commercial or commercial use, modify it
 ## Credits
 Idea, code and hardware support by T-Troll.  
 ACPI SDK and driver based on kdshk's [WindowsHwAccess](https://github.com/kdshk/WindowsHwAccess).  
+Kernel loading hack by hfiref0x's [KDU](https://github.com/hfiref0x/KDU)  
 Special thanks to [DavidLapous](https://github.com/DavidLapous) for inspiration and advices!
 
 
