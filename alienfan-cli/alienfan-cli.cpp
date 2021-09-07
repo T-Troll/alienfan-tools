@@ -64,7 +64,7 @@ void Usage() {
 
 int main(int argc, char* argv[])
 {
-    std::cout << "AlienFan-cli v1.1.0.1\n";
+    std::cout << "AlienFan-cli v1.1.0.2\n";
 
     AlienFan_SDK::Control *acpi = InitAcpi();// new AlienFan_SDK::Control();
 

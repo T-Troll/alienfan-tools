@@ -470,20 +470,20 @@ EvalAcpiMethod(
     BOOL                        IoctlResult;
     DWORD                       ReturnedLength, LastError;
 
-    PACPI_EVAL_INPUT_BUFFER_EX      pMethodWithoutInputEx;
+    ACPI_EVAL_INPUT_BUFFER_EX      pMethodWithoutInputEx = {0};
     ACPI_EVAL_OUTPUT_BUFFER         outbuf;
     PACPI_EVAL_OUTPUT_BUFFER        ActualData;
 
-    pMethodWithoutInputEx = (PACPI_EVAL_INPUT_BUFFER_EX)  malloc (sizeof (ACPI_EVAL_INPUT_BUFFER_EX));
+    //pMethodWithoutInputEx = (PACPI_EVAL_INPUT_BUFFER_EX)  malloc (sizeof (ACPI_EVAL_INPUT_BUFFER_EX));
 		//(ACPI_EVAL_INPUT_BUFFER_EX*)ExAllocatePoolWithTag(0, sizeof(ACPI_EVAL_INPUT_BUFFER_EX), MY_TAG);
 
-	pMethodWithoutInputEx->Signature = ACPI_EVAL_INPUT_BUFFER_SIGNATURE_EX;
-    strcpy_s(pMethodWithoutInputEx->MethodName, 255, puNameSeg);
+	pMethodWithoutInputEx.Signature = ACPI_EVAL_INPUT_BUFFER_SIGNATURE_EX;
+    strcpy_s(pMethodWithoutInputEx.MethodName, 255, puNameSeg);
 
     IoctlResult = DeviceIoControl(
         hDriver,           // Handle to device
         IOCTL_GPD_EVAL_ACPI_WITHOUT_DIRECT,    // IO Control code for Read
-        pMethodWithoutInputEx,        // Buffer to driver.
+        &pMethodWithoutInputEx,        // Buffer to driver.
         sizeof(ACPI_EVAL_INPUT_BUFFER_EX), // Length of buffer in bytes.
         &outbuf,     // Buffer from driver.
         sizeof(ACPI_EVAL_OUTPUT_BUFFER),
@@ -500,7 +500,7 @@ EvalAcpiMethod(
             IoctlResult = DeviceIoControl(
                 hDriver,           // Handle to device
                 IOCTL_GPD_EVAL_ACPI_WITHOUT_DIRECT,    // IO Control code for Read
-                pMethodWithoutInputEx,        // Buffer to driver.
+                &pMethodWithoutInputEx,        // Buffer to driver.
                 sizeof(ACPI_EVAL_INPUT_BUFFER_EX), // Length of buffer in bytes.
                 ActualData,     // Buffer from driver.
                 outbuf.Length,
@@ -513,11 +513,12 @@ EvalAcpiMethod(
                     if (ActualData->Signature != ACPI_EVAL_OUTPUT_BUFFER_SIGNATURE) {
                         (*outputBuffer) = NULL;
                     }
-                    return TRUE;
+                    //return TRUE;
                 }
             }
         }
     }
+    //free(pMethodWithoutInputEx);
     return (BOOLEAN) IoctlResult;
 }
 
@@ -576,11 +577,12 @@ EvalAcpiMethodArgs(
                     if (ActualData->Signature != ACPI_EVAL_OUTPUT_BUFFER_SIGNATURE) {
                         (*outputBuffer) = NULL;
                     }
-                    return TRUE;
+                    //return TRUE;
                 }
             }
         }
     }
+    free(pMethodEx);
     return (BOOLEAN) IoctlResult;
 }
 

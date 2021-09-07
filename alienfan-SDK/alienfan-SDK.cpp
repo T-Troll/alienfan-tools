@@ -64,7 +64,9 @@ namespace AlienFan_SDK {
 			//res = (ACPI_EVAL_OUTPUT_BUFFER *) EvalAcpiMethodArgs(acc, "\\_SB.AMW1.WMAX", acpiargs, (PVOID*)&res);
 		    //EvalAcpiNSArgOutput(mainCommand, acpiargs);
 			if (EvalAcpiMethodArgs(acc, "\\_SB.AMW1.WMAX", acpiargs, (PVOID *) &res)) {
-				return (int) res->Argument[0].Argument;
+				int res_int = res->Argument[0].Argument;
+				free(res);
+				return res_int;
 			}
 		}
 		return -1;
@@ -81,7 +83,9 @@ namespace AlienFan_SDK {
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutBuffArg(acpiargs, 4, (UCHAR*)&packed);
 			//res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(gpuCommand, acpiargs);
 			if (EvalAcpiMethodArgs(acc, "\\_SB.PCI0.PEG0.PEGP.GPS", acpiargs, (PVOID *) &res)) {
-				return (int) res->Argument[0].Argument;
+				int res_int = res->Argument[0].Argument;
+				free(res);
+				return res_int;
 			}
 		}
 		return -1;
@@ -132,22 +136,17 @@ namespace AlienFan_SDK {
 				}
 				for (int i = 0; i < 10; i++) {
 					tempNamePattern[22] = i + '0';
-					//nsType = GetNSType(tempNamePattern);
-					//if (nsType != -1) {
-						// Key found!
-						if (EvalAcpiMethod(acc, tempNamePattern, (PVOID*)&resName)) {
-							//resName = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(tempNamePattern, (USHORT*)&nsType)) {
-							char* c_name = new char[1 + resName->Argument[0].DataLength];
-							wcstombs_s(NULL, c_name, resName->Argument[0].DataLength, (TCHAR*) resName->Argument[0].Data, resName->Argument[0].DataLength);
-							string senName = c_name;
-							delete[] c_name;
-							cur.senIndex = i;
-							cur.name = senName;
-							cur.isFromAWC = false;
-							sensors.push_back(cur);
-							//cout << "Sensor #" << i << ", Name: " << senName << endl;
-						}
-					//}
+					if (EvalAcpiMethod(acc, tempNamePattern, (PVOID*)&resName)) {
+						char* c_name = new char[1 + resName->Argument[0].DataLength];
+						wcstombs_s(NULL, c_name, resName->Argument[0].DataLength, (TCHAR*) resName->Argument[0].Data, resName->Argument[0].DataLength);
+						string senName = c_name;
+						delete[] c_name;
+						cur.senIndex = i;
+						cur.name = senName;
+						cur.isFromAWC = false;
+						sensors.push_back(cur);
+						free(resName);
+					}
 				}
 				return true;
 			}
@@ -160,16 +159,7 @@ namespace AlienFan_SDK {
 		return -1;
 	}
 	int Control::GetFanValue(int fanID) {
-		//TCHAR fanValueCommand[] = TEXT("\\____SB_AMW1RPM1");
-		//PACPI_EVAL_OUTPUT_BUFFER res = NULL;
 		if (fanID < fans.size()) {
-			//fanValueCommand[15] = '1' + fanID;
-			//USHORT nsType = GetNSType(fanValueCommand);
-			//if (nsType) {
-			//	res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(fanValueCommand, &nsType);
-			//	if (res)
-			//		return res->Argument[0].Argument;
-			//} else
 			return RunMainCommand(devs[aDev].getFanBoost.com, devs[aDev].getFanBoost.sub, (byte) fans[fanID]);
 		}
 		return -1;
@@ -181,17 +171,18 @@ namespace AlienFan_SDK {
 	}
 	int Control::GetTempValue(int TempID) {
 		// Additional temp sensor value pattern
-		char tempValuePattern[] = "\\_SB.PCI0.LPCB.EC0.SEN1._TMP"; //TEXT("\\____SB_PCI0LPCBEC0_SEN1_TMP");
+		char tempValuePattern[] = "\\_SB.PCI0.LPCB.EC0.SEN1._TMP";
 		if (TempID < sensors.size()) {
 			if (sensors[TempID].isFromAWC)
 				return RunMainCommand(devs[aDev].getTemp.com, devs[aDev].getTemp.sub, (byte) sensors[TempID].senIndex);
 			else {
 				PACPI_EVAL_OUTPUT_BUFFER res = NULL;
 				tempValuePattern[22] = sensors[TempID].senIndex + '0';
-				//USHORT nsType = GetNSType(tempValuePattern);
-				//res = (PACPI_EVAL_OUTPUT_BUFFER) GetNSValue(tempValuePattern, &nsType);
-				if (EvalAcpiMethod(acc, tempValuePattern, (PVOID*)&res))
-					return (res->Argument[0].Argument - 0xaac) / 0xa;
+				if (EvalAcpiMethod(acc, tempValuePattern, (PVOID *) &res)) {
+					int res_int = res->Argument[0].Argument;
+					free(res);
+					return res_int;
+				}
 			}
 		}
 		return -1;

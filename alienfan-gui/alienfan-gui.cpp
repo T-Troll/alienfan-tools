@@ -744,9 +744,6 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     cArea.bottom -= 1;
 
     switch (message) {
-    //case WM_COMMAND: {
-    //    int i = 0;
-    //} break;
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hDlg, &ps);      
@@ -771,7 +768,6 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         SetCapture(hDlg);
         if (cFan) {
             // check and add point
-            // int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
             int temp = (100 * (GET_X_LPARAM(lParam) - cArea.left)) / (cArea.right - cArea.left),
                 boost = (100 * (cArea.bottom - GET_Y_LPARAM(lParam))) / (cArea.bottom - cArea.top);
             for (vector<fan_point>::iterator fPi = cFan->points.begin();
@@ -812,7 +808,6 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         // remove point from curve...
         if (cFan && cFan->points.size() > 2) {
             // check and remove point
-            //int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
             int temp = (100 * (GET_X_LPARAM(lParam) - cArea.left)) / (cArea.right - cArea.left),
                 boost = (100 * (cArea.bottom - GET_Y_LPARAM(lParam))) / (cArea.bottom - cArea.top);
             for (vector<fan_point>::iterator fPi = cFan->points.begin() + 1;
@@ -827,24 +822,11 @@ INT_PTR CALLBACK FanCurve(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         SetFocus(GetParent(hDlg));
     } break;
-    //case WM_SETCURSOR:
-    //{
-    //    SetCursor(LoadCursor(hInst, IDC_ARROW));
-    ////    //TRACKMOUSEEVENT mEv = {0};
-    ////    //mEv.cbSize = sizeof(TRACKMOUSEEVENT);
-    ////    //mEv.dwFlags = TME_HOVER | TME_LEAVE;
-    ////    //mEv.dwHoverTime = HOVER_DEFAULT;
-    ////    //mEv.hwndTrack = hDlg;
-    ////    //TrackMouseEvent(&mEv);
-    ////    return true;
-    //} break;
     case WM_NCHITTEST:
         return HTCLIENT;
     case WM_ERASEBKGND:
         return true;
         break;
-    default:
-        int i = 0;
     }
     return DefWindowProc(hDlg, message, wParam, lParam);
 }
