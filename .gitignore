@@ -31,10 +31,7 @@
 *.out
 *.app
 /.vs
-/alienfan-cli/
-/alienfan-cli/
 /alienfan-cli/x64
-/HwAcc/
 /HwAcc/x64
 /x64
 /alienfan-SDK/x64
@@ -48,4 +45,4 @@
 /HwAcc/RCc05732
 /HwAcc/RCb05732
 /HwAcc/RCa05732
-/HwAccU/x64
+
