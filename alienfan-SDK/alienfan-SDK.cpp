@@ -44,12 +44,12 @@ namespace AlienFan_SDK {
 	}
 
 	void Control::UnloadService() {
-		if (!haveService && acc != INVALID_HANDLE_VALUE && acc) {
+		if (!haveService) {
+			CloseAcpiDevice(acc);
 			StopService(scManager);
 			RemoveService(scManager);
 			CloseServiceHandle(scManager);
 		}
-		acc = NULL;
 	}
 
 	int Control::RunMainCommand(short com, byte sub, byte value1, byte value2) {
