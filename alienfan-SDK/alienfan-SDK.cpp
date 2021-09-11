@@ -57,12 +57,9 @@ namespace AlienFan_SDK {
 			PACPI_EVAL_OUTPUT_BUFFER res = NULL;
 			PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX acpiargs;
 			BYTE operand[4] = {sub, value1, value2, 0};
-			//UINT operand = ((UINT) arg2) << 16 | (UINT) arg1 << 8 | sub;
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(NULL, 0);
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(acpiargs, com);
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutBuffArg(acpiargs, 4, operand);
-			//res = (ACPI_EVAL_OUTPUT_BUFFER *) EvalAcpiMethodArgs(acc, "\\_SB.AMW1.WMAX", acpiargs, (PVOID*)&res);
-		    //EvalAcpiNSArgOutput(mainCommand, acpiargs);
 			if (EvalAcpiMethodArgs(acc, "\\_SB.AMW1.WMAX", acpiargs, (PVOID *) &res)) {
 				int res_int = res->Argument[0].Argument;
 				free(res);
@@ -81,7 +78,6 @@ namespace AlienFan_SDK {
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(acpiargs, 0x100);
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(acpiargs, com);
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutBuffArg(acpiargs, 4, (UCHAR*)&packed);
-			//res = (ACPI_EVAL_OUTPUT_BUFFER*) EvalAcpiNSArgOutput(gpuCommand, acpiargs);
 			if (EvalAcpiMethodArgs(acc, "\\_SB.PCI0.PEG0.PEGP.GPS", acpiargs, (PVOID *) &res)) {
 				int res_int = res->Argument[0].Argument;
 				free(res);
@@ -188,7 +184,7 @@ namespace AlienFan_SDK {
 		return -1;
 	}
 	int Control::Unlock() {
-		return RunMainCommand(devs[aDev].setPower.com, devs[aDev].setPower.sub);
+		return SetPower(0);
 	}
 	int Control::SetPower(int level) {
 		if (level < powers.size())

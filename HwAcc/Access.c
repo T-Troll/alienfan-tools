@@ -181,9 +181,9 @@ Return Value:
 		//pLDI->AcpiObject = (PVOID)(AcpiDeviceExtension + pLDI->uAcpiOffset);
 		// new way to get acpi acpi namespace is only verifed on windows 10 after 2016
 #ifndef _TINY_DRIVER_
-		if (GetAcpiObjectBase(pLDI, AcpiDeviceExtension) == STATUS_SUCCESS)
+		if (!(GetAcpiObjectBase(pLDI, AcpiDeviceExtension) == STATUS_SUCCESS))
 		{
-			// TODO: Initialize or otherwise for alert
+			return STATUS_NOT_SUPPORTED;
 		}
 #endif
 	}
@@ -1134,9 +1134,7 @@ Return Value:
 
 	NTSTATUS                    status;
 	PACPI_EVAL_INPUT_BUFFER_EX  pInput;
-	//ACPI_EVAL_OUTPUT_BUFFER		acpi_eval_out;
 	ULONG						nSize = 0;// sizeof(acpi_eval_out);
-	//UCHAR						uName[5];
 
 	PAGED_CODE();
 
@@ -1203,11 +1201,9 @@ Return Value:
 --*/
 {
 	NTSTATUS                    status;
-	//PACPI_NAMESPACE             pAcpiNameSpace;
-	//ACPI_EVAL_OUTPUT_BUFFER		acpi_eval_out;
 	ACPI_EVAL_INPUT_BUFFER_COMPLEX_EX *pInput;
 	ULONG						nSize = 0;// sizeof(acpi_eval_out);
-	//UCHAR						uName[4];
+
 
 	PAGED_CODE();
 

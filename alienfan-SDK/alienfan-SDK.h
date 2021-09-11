@@ -57,32 +57,68 @@ namespace AlienFan_SDK {
 		bool activated = false;
 		bool haveService = false;
 		SC_HANDLE scManager = NULL;
-		//int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
 	public:
 		Control();
 		~Control();
+
+		// Stop and unload service if driver loaded from service
 		void UnloadService();
+
+		// Probe hardware, sensors, fans, power modes and fill structures.
+		// Result: true - compatible hardware found, false - not found.
 		bool Probe();
+
+		// Get RPM for the fan index fanID at fans[]
 		int GetFanRPM(int fanID);
+
+		// Get boost value for the fan index fanID at fans[]
 		int GetFanValue(int fanID);
+
+		// Set boost value for the fan index fanID at fans[] (0..100)
 		bool SetFanValue(int fanID, byte value);
+
+		// Get temperature value for the sensor index TanID at sensors[]
 		int GetTempValue(int TempID);
+
+		// Unlock manual fan operations. The same as SetPower(0)
 		int Unlock();
+
+		// Set system power profile to power index at powers[]
 		int SetPower(int level);
+
+		// Get current system power value index at powers[]
 		int GetPower();
+
+		// Set system GPU limit level (0 - no limit, 3 - min. limit)
 		int SetGPU(int power);
+
+		// Get low-level driver handle for direct operations
 		HANDLE GetHandle();
+
+		// True if driver activated and ready, false if not
 		bool IsActivated();
+
+		// Return number of fans into fans[] detected at Probe()
 		int HowManyFans();
+
+		// Return number of power levels into powers[] detected at Probe()
 		int HowManyPower();
+
+		// Return number of temperature sensors into sensors[] detected at Probe()
 		int HowManySensors();
 
+		// Call ACPI system control method with given parameters - see ALIENFAN_DEVICE for details
 		int RunMainCommand(short com, byte sub, byte value1 = 0, byte value2 = 0);
+
+		// Call ACPI GPU control method with given parameters - see ALIENFAN_DEVICE for details
 		int RunGPUCommand(short com, DWORD packed);
 
+		// Arrays of sensors, fans and power values detected at Probe()
 		vector<ALIENFAN_SEN_INFO> sensors;
 		vector<USHORT> fans;
 		vector<USHORT> powers;
+
+		// true if driver connection fails, as well as start driver attempt fails. Indicates you have not enough rights or system not configured correctly.
 		bool wrongEnvironment = false;
 	};
 }
