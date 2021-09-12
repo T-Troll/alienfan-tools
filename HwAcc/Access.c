@@ -177,7 +177,7 @@ Return Value:
 	// Not test on Win7 may failed on old win10
 	// Check the device extension
 	// KdBreakPoint();
-	if (pInput->dwMajorVersion == 6) {
+	if (pInput->dwMajorVersion >= 6) {
 		//pLDI->AcpiObject = (PVOID)(AcpiDeviceExtension + pLDI->uAcpiOffset);
 		// new way to get acpi acpi namespace is only verifed on windows 10 after 2016
 #ifndef _TINY_DRIVER_

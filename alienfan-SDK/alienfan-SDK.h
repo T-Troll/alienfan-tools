@@ -22,6 +22,7 @@ namespace AlienFan_SDK {
 	};
 
 	struct ALIENFAN_DEVICE {
+		char mainCommand[15];
 		ALIENFAN_COMMAND getFanID;
 		ALIENFAN_COMMAND getPowerID;
 		ALIENFAN_COMMAND getZoneSensorID;
@@ -34,8 +35,9 @@ namespace AlienFan_SDK {
 		ALIENFAN_COMMAND setGPUPower;
 	};
 
-	const static ALIENFAN_DEVICE devs[2] = {
+	static ALIENFAN_DEVICE devs[2] = {
 		{ // m15/m17
+			"\\_SB.AMW1.WMAX", // main command
 			0x13,   1, // FanID
 			0x14,   3, // PowerID
 			0x13,   2, // ZoneSensor ID
@@ -47,7 +49,7 @@ namespace AlienFan_SDK {
 			0x15,   1, // Set Power
 			0x13,   4  // GPU power
 		}, 
-		{ 0 }
+		{ "", 0 }
 	};
 
 	class Control {
@@ -55,7 +57,7 @@ namespace AlienFan_SDK {
 		HANDLE acc = NULL;
 		short aDev = -1;
 		bool activated = false;
-		bool haveService = false;
+		//bool haveService = false;
 		SC_HANDLE scManager = NULL;
 	public:
 		Control();
