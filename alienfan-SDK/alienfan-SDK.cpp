@@ -55,14 +55,14 @@ namespace AlienFan_SDK {
 	}
 
 	int Control::RunMainCommand(short com, byte sub, byte value1, byte value2) {
-		if (activated && com) {
+		if (activated && aDev != -1) {
 			PACPI_EVAL_OUTPUT_BUFFER res = NULL;
 			PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX acpiargs;
 			BYTE operand[4] = {sub, value1, value2, 0};
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(NULL, 0);
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutIntArg(acpiargs, com);
 			acpiargs = (PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX) PutBuffArg(acpiargs, 4, operand);
-			if (EvalAcpiMethodArgs(acc, devs[aDev].mainCommand/*"\\_SB.AMW1.WMAX"*/, acpiargs, (PVOID *) &res)) {
+			if (EvalAcpiMethodArgs(acc, devs[aDev].mainCommand, acpiargs, (PVOID *) &res)) {
 				int res_int = res->Argument[0].Argument;
 				free(res);
 				return res_int;
@@ -98,43 +98,76 @@ namespace AlienFan_SDK {
 			fans.clear();
 			powers.clear();
 			// Check device type...
-			// Notebooks...
-			aDev = 0;
-			for (int i = 1; i < 5; i++) {
-				devs[0].mainCommand[8] = i + '0';
-				if (RunMainCommand(devs[0].getFanID.com, devs[0].getFanID.sub, 0x32) == 1) {
-					// Alienware notebook device detected!
+			for (int i = 0; i < NUM_DEVICES; i++) {
+				aDev = i;
+				// Probe...
+				if (RunMainCommand(devs[aDev].probe.com, devs[aDev].probe.sub) == 1) {
+					// Alienware device detected!
 				    // check how many fans we have...
-					USHORT fanID = 0x32;
-					while (RunMainCommand(devs[aDev].getFanID.com, devs[aDev].getFanID.sub, (BYTE) fanID) == 1) {
-						fans.push_back(fanID);
-						fanID++;
+					// Here is NEW detection block, Dell drop function 0x13 at G5...
+					int fIndex = 0, funcID = 0;
+					ALIENFAN_SEN_INFO cur = {0};
+					while ((funcID = RunMainCommand(devs[aDev].getPowerID.com, devs[aDev].getPowerID.sub, fIndex)) < 0x100) {
+						// It's a fan!
+						fans.push_back(funcID);
+						fIndex++;
 					}
-					// check how many power states...
-					BYTE startIndex = 4, powerID = 0xa0;
-					powers.push_back(0);
-					while ((powerID = RunMainCommand(devs[aDev].getPowerID.com, devs[aDev].getPowerID.sub, startIndex)) != 0xff && powerID) {
-						powers.push_back(powerID);
-						startIndex++;
-					}
-					ALIENFAN_SEN_INFO cur;
-					// Scan term sensors for fans...
-					for (int i = 0; i < fans.size(); i++) {
-						USHORT tempIndex;
-						if ((tempIndex = RunMainCommand(devs[aDev].getZoneSensorID.com, devs[aDev].getZoneSensorID.sub, (byte) fans[i])) != -1 && tempIndex) {
-							cur.senIndex = tempIndex;
-							cur.isFromAWC = true;
-							switch (i) {
-							case 0:
-							cur.name = "CPU Internal Thermistor"; break;
-							case 1:
-							cur.name = "GPU Internal Thermistor"; break;
-							default:
-							cur.name = "FAN#" + to_string(i) + " sensor"; break;
-							}
-							sensors.push_back(cur);
+					int firstSenIndex = fIndex;
+					while ((funcID = RunMainCommand(devs[aDev].getPowerID.com, devs[aDev].getPowerID.sub, fIndex)) > 0x100) {
+						// Temp sensor index!
+						cur.senIndex = funcID;
+						cur.isFromAWC = true;
+						switch (fIndex - firstSenIndex) {
+						case 0:
+						cur.name = "CPU Internal Thermistor"; break;
+						case 1:
+						cur.name = "GPU Internal Thermistor"; break;
+						default:
+						cur.name = "FAN#" + to_string(i) + " sensor"; break;
 						}
+						sensors.push_back(cur);
+						fIndex++;
 					}
+					powers.push_back(0);
+					while ((funcID = RunMainCommand(devs[aDev].getPowerID.com, devs[aDev].getPowerID.sub, fIndex)) != devs[aDev].errorCode) {
+						// Power modes.
+						powers.push_back(funcID);
+						fIndex++;
+					}
+					// patch for G5 - performance boost?
+					if (aDev == 2)
+						powers.push_back(0xAB);
+					//USHORT fanID = 0x32;
+					//while (RunMainCommand(devs[aDev].getFanID.com, devs[aDev].getFanID.sub, (BYTE) fanID) == 1) {
+					//	fans.push_back(fanID);
+					//	fanID++;
+					//}
+					//// check how many power states...
+					//BYTE startIndex = 4;
+					//int powerID = 0;
+					//powers.push_back(0);
+					//while ((powerID = RunMainCommand(devs[aDev].getPowerID.com, devs[aDev].getPowerID.sub, startIndex)) != devs[aDev].errorCode) {
+					//	powers.push_back(powerID);
+					//	startIndex++;
+					//}
+					//ALIENFAN_SEN_INFO cur;
+					//// Scan term sensors for fans...
+					//for (int i = 0; i < fans.size(); i++) {
+					//	USHORT tempIndex;
+					//	if ((tempIndex = RunMainCommand(devs[aDev].getZoneSensorID.com, devs[aDev].getZoneSensorID.sub, (byte) fans[i])) != devs[aDev].errorCode) {
+					//		cur.senIndex = tempIndex;
+					//		cur.isFromAWC = true;
+					//		switch (i) {
+					//		case 0:
+					//		cur.name = "CPU Internal Thermistor"; break;
+					//		case 1:
+					//		cur.name = "GPU Internal Thermistor"; break;
+					//		default:
+					//		cur.name = "FAN#" + to_string(i) + " sensor"; break;
+					//		}
+					//		sensors.push_back(cur);
+					//	}
+					//}
 					for (int i = 0; i < 10; i++) {
 						tempNamePattern[22] = i + '0';
 						if (EvalAcpiMethod(acc, tempNamePattern, (PVOID *) &resName)) {
@@ -161,16 +194,20 @@ namespace AlienFan_SDK {
 			return RunMainCommand(devs[aDev].getFanRPM.com, devs[aDev].getFanRPM.sub, (byte)fans[fanID]);
 		return -1;
 	}
-	int Control::GetFanValue(int fanID) {
+	int Control::GetFanValue(int fanID, bool isPwm) {
 		if (fanID < fans.size()) {
-			return RunMainCommand(devs[aDev].getFanBoost.com, devs[aDev].getFanBoost.sub, (byte) fans[fanID]);
+			int finalValue = isPwm ? 255 - RunMainCommand(devs[aDev].getFanBoost.com, devs[aDev].getFanBoost.sub, (byte) fans[fanID]) :
+				RunMainCommand(devs[aDev].getFanBoost.com, devs[aDev].getFanBoost.sub, (byte) fans[fanID]);
+			return finalValue;// *100 / devs[aDev].maxBoost;
 		}
 		return -1;
 	}
-	bool Control::SetFanValue(int fanID, byte value) {
-		if (fanID < fans.size())
-			return RunMainCommand(devs[aDev].setFanBoost.com, devs[aDev].setFanBoost.sub, (byte)fans[fanID], value) != (-1);
-		return false;
+	int Control::SetFanValue(int fanID, byte value, bool isPwm) {
+		if (fanID < fans.size()) {
+			int finalValue = isPwm ? max(255 - value, 91) : value; //*devs[aDev].maxBoost / 100;
+			return RunMainCommand(devs[aDev].setFanBoost.com, devs[aDev].setFanBoost.sub, (byte) fans[fanID], finalValue) != devs[aDev].errorCode;
+		}
+		return -1;
 	}
 	int Control::GetTempValue(int TempID) {
 		// Additional temp sensor value pattern
@@ -216,6 +253,9 @@ namespace AlienFan_SDK {
 	}
 	bool Control::IsActivated() {
 		return activated;
+	}
+	int Control::GetErrorCode() {
+		return aDev != -1 ? devs[aDev].errorCode : -1;
 	}
 	int Control::HowManyFans() {
 		return (int)fans.size();

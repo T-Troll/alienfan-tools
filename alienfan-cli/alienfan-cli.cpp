@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
                     }
                     BYTE unlockStage = atoi(args[0].c_str());
                     if (unlockStage < acpi->HowManyPower()) {
-                        if (acpi->SetPower(unlockStage) >= 0)
+                        if (acpi->SetPower(unlockStage) != acpi->GetErrorCode())
                             cout << "Power set to " << (int) unlockStage << endl;
                         else
                             cout << "Power set failed!" << endl;
@@ -175,20 +175,54 @@ int main(int argc, char* argv[])
                         }
                     continue;
                 }
+                if (command == "getfanspwm" && supported) {
+                    int prms = 0;
+                    for (int i = 0; i < acpi->HowManyFans(); i++)
+                        if ((prms = acpi->GetFanValue(i, true)) >= 0)
+                            cout << "Fan#" << i << " now at " << prms << endl;
+                        else {
+                            cout << "Get fan settings failed!" << endl;
+                            break;
+                        }
+                    continue;
+                }
                 if (command == "setfans" && supported) {
                     if (args.size() < acpi->HowManyFans()) {
-                        cout << "Setfans: incorrect arguments (should be " << acpi->HowManyFans() << ")" << endl;
+                        cout << "Setfans: incorrect arguments (should be " << acpi->HowManyFans() << " of them)" << endl;
                         continue;
                     }
                     int prms = 0;
                     for (int i = 0; i < acpi->HowManyFans(); i++) {
                         BYTE boost = atoi(args[i].c_str());
-                        if (acpi->SetFanValue(i, boost))
-                            cout << "Fan#" << i << " set to " << (int) boost << endl;
-                        else {
-                            cout << "Set fan level failed!" << endl;
-                            break;
-                        }
+                        if (boost < 101) {
+                            if (acpi->SetFanValue(i, boost) >= 0)
+                                cout << "Fan#" << i << " set to " << (int) boost << endl;
+                            else {
+                                cout << "Set fan level failed!" << endl;
+                                break;
+                            }
+                        } else
+                            cout << "Incorrect boost value for Fan#" << i << endl;
+                    }
+                    continue;
+                }
+                if (command == "setfanspwm" && supported) {
+                    if (args.size() < acpi->HowManyFans()) {
+                        cout << "Setfans: incorrect arguments (should be " << acpi->HowManyFans() << " of them)" << endl;
+                        continue;
+                    }
+                    int prms = 0;
+                    for (int i = 0; i < acpi->HowManyFans(); i++) {
+                        BYTE boost = atoi(args[i].c_str());
+                        //if (boost < 101) {
+                            if (acpi->SetFanValue(i, boost, true) >= 0)
+                                cout << "Fan#" << i << " set to " << (int) max(255 - boost, 91) << endl;
+                            else {
+                                cout << "Set fan level failed!" << endl;
+                                break;
+                            }
+                        //} else
+                        //    cout << "Incorrect boost value for Fan#" << i << endl;
                     }
                     continue;
                 }
@@ -205,7 +239,7 @@ int main(int argc, char* argv[])
                         value1 = (byte) strtol(args[2].c_str(), NULL, 16);
                     if (args.size() > 3)
                         value2 = (byte) strtol(args[3].c_str(), NULL, 16);
-                    if ((res = acpi->RunMainCommand(command, subcommand, value1, value2)) >= 0)
+                    if ((res = acpi->RunMainCommand(command, subcommand, value1, value2)) != acpi->GetErrorCode())
                         cout << "Direct call result: " << res << endl;
                     else {
                         cout << "Direct call failed!" << endl;
@@ -221,7 +255,7 @@ int main(int argc, char* argv[])
                     }
                     USHORT command = (USHORT) strtol(args[0].c_str(), NULL, 16);// atoi(args[0].c_str());
                     DWORD subcommand = strtol(args[1].c_str(), NULL, 16);// atoi(args[1].c_str());
-                    if ((res = acpi->RunGPUCommand(command, subcommand)) >= 0)
+                    if ((res = acpi->RunGPUCommand(command, subcommand)) != acpi->GetErrorCode())
                         cout << "DirectGPU call result: " << res << endl;
                     else {
                         cout << "DirectGPU call failed!" << endl;
