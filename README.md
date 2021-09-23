@@ -56,6 +56,8 @@ NB: You should have hwacc.sys into the same folder.
 
 ## `alienfan-gui` usage
 
+![alienfan-gui](/img/alienfan.png?raw=true)
+
 GUI application for fan control.  
 Then you start it, you will see 3 main windows - Temperaturs (with current reading), Fans (with checkboxes and current RPM) and Fan curve (graph).  
 Also, "Power mode" dropdown avaliable to select global power mode.  
