@@ -56,7 +56,7 @@ namespace AlienFan_SDK {
 	}
 
 	int Control::RunMainCommand(ALIENFAN_COMMAND com, byte value1, byte value2) {
-		if (activated && aDev != -1) {
+		if (activated && com.com && aDev != -1) {
 			PACPI_EVAL_OUTPUT_BUFFER res = NULL;
 			PACPI_EVAL_INPUT_BUFFER_COMPLEX_EX acpiargs;
 			BYTE operand[4] = {com.sub, value1, value2, 0};
@@ -102,13 +102,13 @@ namespace AlienFan_SDK {
 			for (int i = 0; i < NUM_DEVICES; i++) {
 				aDev = i;
 				// Probe...
-				if (RunMainCommand(devs[aDev].probe) == 1) {
+				if (RunMainCommand(devs[aDev].probe) >= 1) {
 					// Alienware device detected!
 				    // check how many fans we have...
 					// Here is NEW detection block, Dell drop function 0x13 at G5...
 					int fIndex = 0, funcID = 0;
 					ALIENFAN_SEN_INFO cur = {0};
-					while ((funcID = RunMainCommand(dev_controls[devs[aDev].controlID].getPowerID, fIndex)) < 0x100) {
+					while ((funcID = RunMainCommand(dev_controls[devs[aDev].controlID].getPowerID, fIndex)) != 0x101) {
 						// It's a fan!
 						//std::cout << "Fan " << funcID << " found." << endl;
 						fans.push_back(funcID);
@@ -131,16 +131,25 @@ namespace AlienFan_SDK {
 						sensors.push_back(cur);
 						fIndex++;
 					}
-					powers.push_back(0);
-					while ((funcID = RunMainCommand(dev_controls[devs[aDev].controlID].getPowerID, fIndex)) != devs[aDev].errorCode && funcID >= 0) {
-						// Power modes.
-						//std::cout << "Power mode " << funcID << " found." << endl;
-						powers.push_back(funcID);
-						fIndex++;
+					if (aDev != 3) {
+						powers.push_back(0);
+						while ((funcID = RunMainCommand(dev_controls[devs[aDev].controlID].getPowerID, fIndex)) != devs[aDev].errorCode && funcID >= 0) {
+							// Power modes.
+							//std::cout << "Power mode " << funcID << " found." << endl;
+							powers.push_back(funcID);
+							fIndex++;
+						}
 					}
-					// patch for G5 - performance boost
-					if (aDev == 2)
-						powers.push_back(0xAB);
+					// patches... 
+					switch (aDev) {
+					case 2: // for G5 - hidden performance boost
+					    powers.push_back(0xAB);
+					    break;
+					case 3: // for Aurora - powers is 1..2
+					    powers.push_back(1);
+					    powers.push_back(2);
+						break;
+					}
 					for (int i = 0; i < 10; i++) {
 						tempNamePattern[22] = i + '0';
 						if (EvalAcpiMethod(acc, tempNamePattern, (PVOID *) &resName)) {
@@ -169,16 +178,19 @@ namespace AlienFan_SDK {
 	}
 	int Control::GetFanValue(int fanID) {
 		if (fanID < fans.size()) {
-			int finalValue = devs[aDev].pwmfans ? 
-				(255 - RunMainCommand(dev_controls[devs[aDev].controlID].getFanBoost, (byte) fans[fanID])) * 100 / (255 - devs[aDev].minPwm) :
-				RunMainCommand(dev_controls[devs[aDev].controlID].getFanBoost, (byte) fans[fanID]);
+			int value = RunMainCommand(dev_controls[devs[aDev].controlID].getFanBoost, (byte) fans[fanID]),
+				finalValue = devs[aDev].pwmfans ? 
+				//(255 - RunMainCommand(dev_controls[devs[aDev].controlID].getFanBoost, (byte) fans[fanID])) * 100 / (255 - devs[aDev].minPwm) :
+				value * 100 / devs[aDev].minPwm :
+				value;
 			return finalValue;
 		}
 		return -1;
 	}
 	int Control::SetFanValue(int fanID, byte value, bool force) {
 		if (fanID < fans.size()) {
-			int finalValue = devs[aDev].pwmfans && ! force ? 255 - (255 - devs[aDev].minPwm) * value / 100 : value;
+			int finalValue = devs[aDev].pwmfans && !force ? (int)value * devs[aDev].minPwm / 100 : value;
+				//255 - (255 - devs[aDev].minPwm) * value / 100 : value;
 			return RunMainCommand(dev_controls[devs[aDev].controlID].setFanBoost, (byte) fans[fanID], finalValue) != devs[aDev].errorCode;
 		}
 		return -1;
