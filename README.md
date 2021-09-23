@@ -12,7 +12,7 @@ Tools avaliable:
   - Use "Test mode" instalation method.
 - This tools utilize low-level ACPI functions access, it can provide BSOD at start if supported ACPI bus not found! Use with care, at you own risk!
 
-## How do it works?
+## How it works?
 Instead of many other fan control tools, like `SpeedFan`, `HWINFO` or `Dell Fan Control`, this tools does not use direct EC (Embed controller) access and data modification.  
 My tools utilize propietary Alienware function calls inside ACPI BIOS instead (the same as AWCC).
 - It's more safe - BIOS still monitor fans and have no risk fans will be stopped at full load.
