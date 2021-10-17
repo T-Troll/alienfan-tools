@@ -172,7 +172,7 @@ MIT. You can use these tools for any non-commercial or commercial use, modify it
 Idea, code and hardware support by T-Troll.  
 ACPI driver based on kdshk's [WindowsHwAccess](https://github.com/kdshk/WindowsHwAccess).  
 Kernel loading hack based on hfiref0x's [KDU](https://github.com/hfiref0x/KDU)  
-Special thanks to [DavidLapous](https://github.com/DavidLapous) for inspiration and advices!
+Special thanks to [DavidLapous](https://github.com/DavidLapous) for inspiration and advices!  
 Thanks to [Raoul Duke](https://github.com/raould) for Aurora R7 testing.
 
 
