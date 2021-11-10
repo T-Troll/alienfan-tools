@@ -161,6 +161,8 @@ You can also try to overboost only one fan, issue `alienfan-overboost <fan ID>` 
 
 NB: For my system is better run this tool at system idle state (it provide more precise results), but for some system it can be better to run it at fully loaded system, running some bench app like Heaven Benchmark. Please keep in mind, full-auto test took some minutes, so you benchmark should be long enough for this.
 
+WARNING: Stop all fan-control software before start this tool, or results will be incorrect!
+
 ## ToDo:
 - [x] Temperature sensors reading
 - [x] Eliminate "Test mode" requirement
