@@ -3,24 +3,8 @@
 
 ConfigHelper::ConfigHelper() {
 	
-	RegCreateKeyEx(HKEY_CURRENT_USER,
-				   TEXT("SOFTWARE\\Alienfan"),
-				   0,
-				   NULL,
-				   REG_OPTION_NON_VOLATILE,
-				   KEY_ALL_ACCESS,
-				   NULL,
-				   &hKey1,
-				   NULL);
-	RegCreateKeyEx(HKEY_CURRENT_USER,
-				   TEXT("SOFTWARE\\Alienfan\\Sensors"),
-				   0,
-				   NULL,
-				   REG_OPTION_NON_VOLATILE,
-				   KEY_ALL_ACCESS,
-				   NULL,
-				   &hKey2,
-				   NULL);
+	RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Alienfan"), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey1, NULL);
+	RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("SOFTWARE\\Alienfan\\Sensors"), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey2, NULL);
 
 	Load();
 }
@@ -72,7 +56,6 @@ void ConfigHelper::Load() {
 	GetReg("LastSensor", &lastSelectedSensor);
 	GetReg("LastFan", &lastSelectedFan);
 	GetReg("LastGPU", &prof.GPUPower);
-	//GetReg("MaxRPM", &maxRPM, 4000);
 
 	// Now load sensor mappings...
 	unsigned vindex = 0;
@@ -174,8 +157,8 @@ void ConfigHelper::SetBoosts(AlienFan_SDK::Control *acpi) {
 			if (boosts[i].maxBoost)
 				acpi->boosts[i] = boosts[i].maxBoost;
 			else
-				boosts[i] = {acpi->boosts[i], 4000};
+				boosts[i] = {acpi->boosts[i], 5000};
 		else
-			boosts.push_back({acpi->boosts[i], 4000});
+			boosts.push_back({acpi->boosts[i], 5000});
 }
 
