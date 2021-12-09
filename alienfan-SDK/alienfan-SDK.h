@@ -67,8 +67,10 @@ namespace AlienFan_SDK {
 		Control();
 		~Control();
 
+#ifdef _SERVICE_WAY_
 		// Stop and unload service if driver loaded from service
 		void UnloadService();
+#endif
 
 		// Probe hardware, sensors, fans, power modes and fill structures.
 		// Result: true - compatible hardware found, false - not found.
@@ -147,7 +149,7 @@ namespace AlienFan_SDK {
 		vector<byte> powers;
 
 		// true if driver connection fails, as well as start driver attempt fails. Indicates you have not enough rights or system not configured correctly.
-		bool wrongEnvironment = false;
+		//bool wrongEnvironment = true;
 	};
 
 	class Lights {
