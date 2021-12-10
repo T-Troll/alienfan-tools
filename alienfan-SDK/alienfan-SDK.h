@@ -148,8 +148,10 @@ namespace AlienFan_SDK {
 		vector<byte> boosts;
 		vector<byte> powers;
 
+#ifdef _SERVICE_WAY_
 		// true if driver connection fails, as well as start driver attempt fails. Indicates you have not enough rights or system not configured correctly.
-		//bool wrongEnvironment = true;
+		bool wrongEnvironment = true;
+#endif
 	};
 
 	class Lights {
