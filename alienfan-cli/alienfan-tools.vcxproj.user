@@ -4,7 +4,7 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>unlock setfans=100,0 rpm</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>setperf=1,1</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>$(SolutionDir)$(Platform)\$(Configuration)\</LocalDebuggerWorkingDirectory>
     <RemoteDebuggerCommand>c:\work\afx-tools\$(TargetFileName)</RemoteDebuggerCommand>
